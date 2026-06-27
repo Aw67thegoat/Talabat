@@ -408,70 +408,18 @@
             font-size: 15px;
         }
     </style>
-</head>
-<body>
 
-    <div id="password-screen">
-        <div class="login-card">
-            <h2>Enter Secret Password</h2>
-            <input type="password" id="password-input" placeholder="Password...">
-            <button class="login-btn" onclick="checkPassword()">Submit</button>
-        </div>
-    </div>
+    <!-- Load Firebase SDK Modules -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, set, push, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-    <div id="app-screen">
-        <header>
-            <h1 id="page-title">Order</h1>
-            <div class="header-actions">
-                <button class="send-btn" id="header-send-btn" onclick="sendOrder()">Send</button>
-                <button class="history-btn" onclick="openHistory()">History</button>
-            </div>
-        </header>
-
-        <div class="container">
-            <div id="order-view">
-                <div class="grid" id="items-grid"></div>
-            </div>
-
-            <div id="list-view" style="display: none;">
-                <div id="active-list"></div>
-            </div>
-        </div>
-
-        <nav>
-            <button class="nav-btn active" id="nav-order" onclick="switchTab('order')">1. Order</button>
-            <button class="nav-btn" id="nav-list" onclick="switchTab('list')">2. List</button>
-        </nav>
-    </div>
-
-    <div id="history-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>History (Past 30 Mins)</h3>
-                <button class="close-modal" onclick="closeHistory()">&times;</button>
-            </div>
-            <div id="history-list"></div>
-        </div>
-    </div>
-
-    <script>
         // =========================================================================
         // CHANGE YOUR ITEM NAMES HERE!
-        // The number matching your image (e.g., 1.png) corresponds to its spot here.
-        // You can add up to 100 items inside this list.
         // =========================================================================
         const itemNames = [
-            "Milk",        // This matches 1.png
-            "Eggs",       // This matches 2.png
-            "Lusine",        // This matches 3.png
-            "Grapes",      // This matches 4.png
-            "Apple",      // This matches 5.png
-            "Banana",      // This matches 6.png
-            "School Bread",      // This matches 7.png
-            "Burger",      // This matches 8.png
-            "Burger Bread",      // This matches 9.png
-            "Berry Juice",     // This matches 10.png
-            "Yoghurt", "Soda", "Kinza Cola", "Ketchup", "Butter", "Item 16", "Item 17", "Item 18", "Item 19", "Item 20",
+            "Milk", "Bread", "Eggs", "Item 4", "Item 5", "Item 6", "Item 7", "Item 8", "Item 9", "Item 10",
+            "Item 11", "Item 12", "Item 13", "Item 14", "Item 15", "Item 16", "Item 17", "Item 18", "Item 19", "Item 20",
             "Item 21", "Item 22", "Item 23", "Item 24", "Item 25", "Item 26", "Item 27", "Item 28", "Item 29", "Item 30",
             "Item 31", "Item 32", "Item 33", "Item 34", "Item 35", "Item 36", "Item 37", "Item 38", "Item 39", "Item 40",
             "Item 41", "Item 42", "Item 43", "Item 44", "Item 45", "Item 46", "Item 47", "Item 48", "Item 49", "Item 50",
@@ -482,18 +430,34 @@
             "Item 91", "Item 92", "Item 93", "Item 94", "Item 95", "Item 96", "Item 97", "Item 98", "Item 99", "Item 100"
         ];
 
-        // Data stores
+        // =========================================================================
+        // AUTOMATICALLY COPIED FROM YOUR SCREENSHOT 2026-06-27 044536.JPG
+        // =========================================================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyBh8cPnt3MovP0vf1Qi3zU0LVcXYC3RNKA",
+            authDomain: "talabat-78707.firebaseapp.com",
+            databaseURL: "https://talabat-78707-default-rtdb.firebaseio.com/",
+            projectId: "talabat-78707",
+            storageBucket: "talabat-78707.firebasestorage.app",
+            messagingSenderId: "786538469018",
+            appId: "1:786538469018:web:bbce837d6453b0aa91b123"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // App State Variables
         let quantities = {};
         let activeOrders = [];
         let historyOrders = [];
 
-        // Initialize item counts based on layout configurations
+        // Setup local quantities structure
         itemNames.forEach((name, index) => {
-            const id = index + 1; // ID matches image numbers starting at 1
-            quantities[id] = 0;
+            quantities[index + 1] = 0;
         });
 
-        // Generate Item Grid UI dynamically using custom names
+        // Generate Item Grid UI Layout
         const grid = document.getElementById('items-grid');
         itemNames.forEach((name, index) => {
             const id = index + 1;
@@ -503,26 +467,18 @@
                 <img src="${id}.png" alt="${name}" onerror="this.src='https://via.placeholder.com/150/e6f2ff/0076ff?text=${id}'">
                 <div class="item-name">${name}</div>
                 <div class="controls">
-                    <button onclick="updateQty(${id}, -1)">-</button>
+                    <button id="minus-${id}">-</button>
                     <span class="count" id="count-${id}">0</span>
-                    <button onclick="updateQty(${id}, 1)">+</button>
+                    <button id="plus-${id}">+</button>
                 </div>
             `;
             grid.appendChild(card);
+
+            // Hook up increment buttons
+            card.querySelector(`#minus-${id}`).addEventListener('click', () => updateQty(id, -1));
+            card.querySelector(`#plus-${id}`).addEventListener('click', () => updateQty(id, 1));
         });
 
-        // Password Verification
-        function checkPassword() {
-            const pass = document.getElementById('password-input').value;
-            if (pass === "talabat1234") {
-                document.getElementById('password-screen').style.display = 'none';
-                document.getElementById('app-screen').style.display = 'block';
-            } else {
-                alert("Incorrect password!");
-            }
-        }
-
-        // Quantity adjustments
         function updateQty(id, change) {
             let current = quantities[id];
             current += change;
@@ -531,8 +487,151 @@
             document.getElementById(`count-${id}`).innerText = current;
         }
 
-        // Tab switching functionality
-        function switchTab(tab) {
+        // Send orders up into global shared cloud node
+        function sendOrder() {
+            let addedAnything = false;
+            itemNames.forEach((name, index) => {
+                const id = index + 1;
+                if (quantities[id] > 0) {
+                    const activeRef = ref(db, 'orders/active');
+                    push(activeRef, {
+                        id: id,
+                        name: name,
+                        qty: quantities[id],
+                        timestamp: new Date().getTime()
+                    });
+                    quantities[id] = 0;
+                    document.getElementById(`count-${id}`).innerText = 0;
+                    addedAnything = true;
+                }
+            });
+
+            if (addedAnything) {
+                alert("Items added to List globally!");
+                switchTab('list');
+            } else {
+                alert("Please add some items first!");
+            }
+        }
+
+        // Fetch live database updates continuously
+        onValue(ref(db, 'orders/active'), (snapshot) => {
+            activeOrders = [];
+            const data = snapshot.val();
+            if (data) {
+                Object.keys(data).forEach(key => {
+                    activeOrders.push({ firebaseKey: key, ...data[key] });
+                });
+            }
+            renderActiveList();
+        });
+
+        onValue(ref(db, 'orders/history'), (snapshot) => {
+            historyOrders = [];
+            const data = snapshot.val();
+            if (data) {
+                Object.keys(data).forEach(key => {
+                    historyOrders.push({ firebaseKey: key, ...data[key] });
+                });
+            }
+        });
+
+        function renderActiveList() {
+            const container = document.getElementById('active-list');
+            container.innerHTML = '';
+
+            if (activeOrders.length === 0) {
+                container.innerHTML = '<div class="empty-msg">No active items in your list.</div>';
+                return;
+            }
+
+            activeOrders.forEach((item) => {
+                const row = document.createElement('div');
+                row.className = 'list-item';
+                row.innerHTML = `
+                    <div class="list-item-left">
+                        <img src="${item.id}.png" onerror="this.src='https://via.placeholder.com/150/e6f2ff/0076ff?text=${item.id}'">
+                        <div class="list-item-info">
+                            <strong>${item.name}</strong>
+                            <span class="qty-badge">x${item.qty}</span>
+                        </div>
+                    </div>
+                    <div class="circle-checkbox" id="check-${item.firebaseKey}"></div>
+                `;
+                container.appendChild(row);
+
+                row.querySelector(`#check-${item.firebaseKey}`).addEventListener('click', (e) => {
+                    e.target.classList.add('checked');
+                    setTimeout(() => checkOffItem(item), 400);
+                });
+            });
+        }
+
+        function checkOffItem(item) {
+            set(ref(db, `orders/active/${item.firebaseKey}`), null);
+
+            const historyRef = ref(db, 'orders/history');
+            push(historyRef, {
+                id: item.id,
+                name: item.name,
+                qty: item.qty,
+                completedAt: new Date().getTime()
+            });
+        }
+
+        function openHistory() {
+            const now = new Date().getTime();
+            const modal = document.getElementById('history-modal');
+            const historyList = document.getElementById('history-list');
+            modal.style.display = 'flex';
+            historyList.innerHTML = '';
+
+            const validHistory = historyOrders.filter(item => {
+                const diffInMinutes = (now - item.completedAt) / 1000 / 60;
+                if (diffInMinutes > 30) {
+                    set(ref(db, `orders/history/${item.firebaseKey}`), null);
+                    return false;
+                }
+                return true;
+            });
+
+            if (validHistory.length === 0) {
+                historyList.innerHTML = '<div class="empty-msg">No history records in the last 30 minutes.</div>';
+                return;
+            }
+
+            for (let i = validHistory.length - 1; i >= 0; i--) {
+                const item = validHistory[i];
+                const timeString = new Date(item.completedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                
+                const row = document.createElement('div');
+                row.className = 'list-item';
+                row.innerHTML = `
+                    <div class="list-item-left">
+                        <img src="${item.id}.png" onerror="this.src='https://via.placeholder.com/150/e6f2ff/0076ff?text=${item.id}'">
+                        <div class="list-item-info">
+                            <strong>${item.name}</strong>
+                            <span class="qty-badge" style="background-color: #e6fcf5; color: var(--success);">x${item.qty}</span>
+                            <div class="timestamp">Checked at: ${timeString}</div>
+                        </div>
+                    </div>
+                    <div class="circle-checkbox checked" style="pointer-events: none;"></div>
+                `;
+                historyList.appendChild(row);
+            }
+        }
+
+        window.checkPassword = function() {
+            const pass = document.getElementById('password-input').value;
+            if (pass === "talabat1234") {
+                document.getElementById('password-screen').style.display = 'none';
+                document.getElementById('app-screen').style.display = 'block';
+            } else {
+                alert("Incorrect password!");
+            }
+        };
+
+        window.switchTab = function(tab) {
             const orderView = document.getElementById('order-view');
             const listView = document.getElementById('list-view');
             const navOrder = document.getElementById('nav-order');
@@ -556,133 +655,64 @@
                 sendBtn.style.display = 'none';
                 renderActiveList();
             }
-        }
+        };
 
-        // Send logic -> compiles active quantities into the master list
-        function sendOrder() {
-            let addedAnything = false;
-            itemNames.forEach((name, index) => {
-                const id = index + 1;
-                if (quantities[id] > 0) {
-                    activeOrders.push({
-                        id: id,
-                        name: name,
-                        qty: quantities[id],
-                        timestamp: new Date()
-                    });
-                    // Reset counter back to zero after sending
-                    quantities[id] = 0;
-                    document.getElementById(`count-${id}`).innerText = 0;
-                    addedAnything = true;
-                }
-            });
+        document.getElementById('header-send-btn').addEventListener('click', sendOrder);
+        document.getElementById('open-history-btn').addEventListener('click', openHistory);
+    </script>
+</head>
+<body>
 
-            if (addedAnything) {
-                alert("Items added to List!");
-                switchTab('list');
-            } else {
-                alert("Please add some items first!");
-            }
-        }
+    <!-- 1. Password Screen -->
+    <div id="password-screen">
+        <div class="login-card">
+            <h2>Enter Secret Password</h2>
+            <input type="password" id="password-input" placeholder="Password...">
+            <button class="login-btn" onclick="checkPassword()">Submit</button>
+        </div>
+    </div>
 
-        // Render standard active items inside List tab
-        function renderActiveList() {
-            const container = document.getElementById('active-list');
-            container.innerHTML = '';
+    <!-- 2. Main App Screen -->
+    <div id="app-screen">
+        <header>
+            <h1 id="page-title">Order</h1>
+            <div class="header-actions">
+                <button class="send-btn" id="header-send-btn">Send</button>
+                <button class="history-btn" id="open-history-btn">History</button>
+            </div>
+        </header>
 
-            if (activeOrders.length === 0) {
-                container.innerHTML = '<div class="empty-msg">No active items in your list.</div>';
-                return;
-            }
+        <div class="container">
+            <!-- Order View -->
+            <div id="order-view">
+                <div class="grid" id="items-grid"></div>
+            </div>
 
-            activeOrders.forEach((item, index) => {
-                const row = document.createElement('div');
-                row.className = 'list-item';
-                row.innerHTML = `
-                    <div class="list-item-left">
-                        <img src="${item.id}.png" onerror="this.src='https://via.placeholder.com/150/e6f2ff/0076ff?text=${item.id}'">
-                        <div class="list-item-info">
-                            <strong>${item.name}</strong>
-                            <span class="qty-badge">x${item.qty}</span>
-                        </div>
-                    </div>
-                    <div class="circle-checkbox" onclick="checkOffItem(${index})"></div>
-                `;
-                container.appendChild(row);
-            });
-        }
+            <!-- List View -->
+            <div id="list-view" style="display: none;">
+                <div id="active-list"></div>
+            </div>
+        </div>
 
-        // Checkmark animation, wait, move to history, and delete from original list
-        function checkOffItem(index) {
-            const checkboxes = document.querySelectorAll('#active-list .circle-checkbox');
-            const targetBox = checkboxes[index];
-            
-            targetBox.classList.add('checked');
+        <!-- Bottom Navigation -->
+        <nav>
+            <button class="nav-btn active" id="nav-order" onclick="switchTab('order')">1. Order</button>
+            <button class="nav-btn" id="nav-list" onclick="switchTab('list')">2. List</button>
+        </nav>
+    </div>
 
-            setTimeout(() => {
-                // Set the exact time it was completed
-                activeOrders[index].completedAt = new Date();
-                
-                // Push item copy over to history array
-                historyOrders.push(activeOrders[index]);
-                
-                // Remove item out of active items array
-                activeOrders.splice(index, 1);
-                
-                // Re-render display
-                renderActiveList();
-            }, 400);
-        }
+    <!-- History Modal -->
+    <div id="history-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>History (Past 30 Mins)</h3>
+                <button class="close-modal" onclick="document.getElementById('history-modal').style.display = 'none'">&times;</button>
+            </div>
+            <div id="history-list"></div>
+        </div>
+    </div>
 
-        // Clean out history array of items older than 30 minutes
-        function cleanExpiredHistory() {
-            const now = new Date();
-            historyOrders = historyOrders.filter(item => {
-                const diffInMinutes = (now - item.completedAt) / 1000 / 60;
-                return diffInMinutes <= 30;
-            });
-        }
-
-        // Open history layer overlay
-        function openHistory() {
-            cleanExpiredHistory();
-            const modal = document.getElementById('history-modal');
-            const historyList = document.getElementById('history-list');
-            modal.style.display = 'flex';
-            historyList.innerHTML = '';
-
-            if (historyOrders.length === 0) {
-                historyList.innerHTML = '<div class="empty-msg">No history records in the last 30 minutes.</div>';
-                return;
-            }
-
-            // Loop backwards to show newest checked items at top
-            for (let i = historyOrders.length - 1; i >= 0; i--) {
-                const item = historyOrders[i];
-                const timeString = item.completedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                
-                const row = document.createElement('div');
-                row.className = 'list-item';
-                row.innerHTML = `
-                    <div class="list-item-left">
-                        <img src="${item.id}.png" onerror="this.src='https://via.placeholder.com/150/e6f2ff/0076ff?text=${item.id}'">
-                        <div class="list-item-info">
-                            <strong>${item.name}</strong>
-                            <span class="qty-badge" style="background-color: #e6fcf5; color: var(--success);">x${item.qty}</span>
-                            <div class="timestamp">Checked at: ${timeString}</div>
-                        </div>
-                    </div>
-                    <div class="circle-checkbox checked" style="pointer-events: none;"></div>
-                `;
-                historyList.appendChild(row);
-            }
-        }
-
-        function closeHistory() {
-            document.getElementById('history-modal').style.display = 'none';
-        }
-
-        // Close history window if background overlay clicked directly
+    <script>
         window.onclick = function(event) {
             const modal = document.getElementById('history-modal');
             if (event.target == modal) {
