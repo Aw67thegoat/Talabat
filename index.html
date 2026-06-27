@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order System</title>
+    <style>
+        :root {
+            --primary: #0076ff;
+            --primary-hover: #0056b3;
+            --primary-light: #e6f2ff;
+            --success: #00b96b;
+            --bg: #f4f6f9;
+            --card-bg: #ffffff;
+            --text: #2d3748;
+            --text-muted: #718096;
+            --border: #e2e8f0;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg);
+            color: var(--text);
+            padding-bottom: 80px; /* Space for bottom navigation */
+        }
+
+        /* Password Screen */
+        #password-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: var(--bg);
+            padding: 20px;
+        }
+
+        .login-card {
+            background: var(--card-bg);
+            padding: 40px 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 118, 255, 0.05);
+            text-align: center;
+            width: 100%;
+            max-width: 360px;
+        }
+
+        .login-card h2 {
+            margin-top: 0;
+            margin-bottom: 24px;
+            color: var(--text);
+            font-size: 22px;
+        }
+
+        #password-input {
+            padding: 14px;
+            font-size: 16px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            margin-bottom: 16px;
+            width: 100%;
+            text-align: center;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        #password-input:focus {
+            border-color: var(--primary);
+        }
+
+        .login-btn {
+            padding: 14px;
+            font-size: 16px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            width: 100%;
+            transition: background-color 0.2s;
+        }
+
+        .login-btn:hover {
+            background-color: var(--primary-hover);
+        }
+
+        /* Main App Layout */
+        #app-screen {
+            display: none;
+        }
+
+        header {
+            background-color: var(--card-bg);
+            padding: 16px 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            border-bottom: 1px solid var(--border);
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .send-btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 20px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0, 118, 255, 0.2);
+            transition: background-color 0.2s;
+        }
+
+        .send-btn:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .history-btn {
+            background-color: var(--primary-light);
+            border: none;
+            color: var(--primary);
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .history-btn:hover {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 0 16px;
+        }
+
+        /* Order Grid */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        .item-card {
+            background: var(--card-bg);
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 16px;
+            text-align: center;
+            border: 1px solid transparent;
+            transition: border-color 0.2s;
+        }
+
+        .item-card:hover {
+            border-color: var(--border);
+        }
+
+        .item-card img {
+            width: 100%;
+            height: 130px;
+            object-fit: cover;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            background-color: #f7fafc;
+        }
+
+        .item-name {
+            font-weight: 600;
+            font-size: 15px;
+            margin-bottom: 12px;
+            color: var(--text);
+        }
+
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            background: #f7fafc;
+            padding: 4px 8px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+        }
+
+        .controls button {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: none;
+            background: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            color: var(--text);
+            transition: background-color 0.1s;
+        }
+
+        .controls button:active {
+            background-color: var(--border);
+        }
+
+        .count {
+            font-size: 15px;
+            font-weight: 700;
+            min-width: 20px;
+            color: var(--text);
+        }
+
+        /* List & History View */
+        .list-item {
+            background: var(--card-bg);
+            padding: 14px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+            border: 1px solid var(--border);
+        }
+
+        .list-item-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .list-item img {
+            width: 54px;
+            height: 54px;
+            object-fit: cover;
+            border-radius: 8px;
+            background-color: #f7fafc;
+        }
+
+        .list-item-info strong {
+            display: block;
+            font-size: 15px;
+            color: var(--text);
+            margin-bottom: 2px;
+        }
+
+        .qty-badge {
+            display: inline-block;
+            background-color: var(--primary-light);
+            color: var(--primary);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .circle-checkbox {
+            width: 26px;
+            height: 26px;
+            border: 2px solid var(--border);
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            background: white;
+        }
+
+        .circle-checkbox:hover {
+            border-color: var(--primary);
+        }
+
+        .circle-checkbox.checked {
+            background-color: var(--success);
+            border-color: var(--success);
+        }
+
+        .circle-checkbox.checked::after {
+            content: "✓";
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .timestamp {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        /* Bottom Navigation */
+        nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 65px;
+            background-color: var(--card-bg);
+            border-top: 1px solid var(--border);
+            display: flex;
+            z-index: 10;
+            box-shadow: 0 -4px 10px rgba(0,0,0,0.02);
+        }
+
+        .nav-btn {
+            flex: 1;
+            background: none;
+            border: none;
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s;
+        }
+
+        .nav-btn.active {
+            color: var(--primary);
+        }
+
+        /* Modal styling */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(26, 32, 44, 0.4);
+            backdrop-filter: blur(4px);
+            z-index: 20;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 24px;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 450px;
+            max-height: 75vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 12px;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: 18px;
+            color: var(--text);
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--text-muted);
+            line-height: 1;
+        }
+
+        .empty-msg {
+            text-align: center;
+            color: var(--text-muted);
+            margin-top: 40px;
+            font-size: 15px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="password-screen">
+        <div class="login-card">
+            <h2>Enter Secret Password</h2>
+            <input type="password" id="password-input" placeholder="Password...">
+            <button class="login-btn" onclick="checkPassword()">Submit</button>
+        </div>
+    </div>
+
+    <div id="app-screen">
+        <header>
+            <h1 id="page-title">Order</h1>
+            <div class="header-actions">
+                <button class="send-btn" id="header-send-btn" onclick="sendOrder()">Send</button>
+                <button class="history-btn" onclick="openHistory()">History</button>
+            </div>
+        </header>
+
+        <div class="container">
+            <div id="order-view">
+                <div class="grid" id="items-grid"></div>
+            </div>
+
+            <div id="list-view" style="display: none;">
+                <div id="active-list"></div>
+            </div>
+        </div>
+
+        <nav>
+            <button class="nav-btn active" id="nav-order" onclick="switchTab('order')">1. Order</button>
+            <button class="nav-btn" id="nav-list" onclick="switchTab('list')">2. List</button>
+        </nav>
+    </div>
+
+    <div id="history-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>History (Past 30 Mins)</h3>
+                <button class="close-modal" onclick="closeHistory()">&times;</button>
+            </div>
+            <div id="history-list"></div>
+        </div>
+    </div>
+
+    <script>
+        // =========================================================================
+        // CHANGE YOUR ITEM NAMES HERE!
+        // The number matching your image (e.g., 1.png) corresponds to its spot here.
+        // You can add up to 100 items inside this list.
+        // =========================================================================
+        const itemNames = [
+            "Milk",        // This matches 1.png
+            "Eggs",       // This matches 2.png
+            "Lusine",        // This matches 3.png
+            "Grapes",      // This matches 4.png
+            "Apple",      // This matches 5.png
+            "Banana",      // This matches 6.png
+            "School Bread",      // This matches 7.png
+            "Burger",      // This matches 8.png
+            "Burger Bread",      // This matches 9.png
+            "Berry Juice",     // This matches 10.png
+            "Yoghurt", "Soda", "Kinza Cola", "Ketchup", "Butter", "Item 16", "Item 17", "Item 18", "Item 19", "Item 20",
+            "Item 21", "Item 22", "Item 23", "Item 24", "Item 25", "Item 26", "Item 27", "Item 28", "Item 29", "Item 30",
+            "Item 31", "Item 32", "Item 33", "Item 34", "Item 35", "Item 36", "Item 37", "Item 38", "Item 39", "Item 40",
+            "Item 41", "Item 42", "Item 43", "Item 44", "Item 45", "Item 46", "Item 47", "Item 48", "Item 49", "Item 50",
+            "Item 51", "Item 52", "Item 53", "Item 54", "Item 55", "Item 56", "Item 57", "Item 58", "Item 59", "Item 60",
+            "Item 61", "Item 62", "Item 63", "Item 64", "Item 65", "Item 66", "Item 67", "Item 68", "Item 69", "Item 70",
+            "Item 71", "Item 72", "Item 73", "Item 74", "Item 75", "Item 76", "Item 77", "Item 78", "Item 79", "Item 80",
+            "Item 81", "Item 82", "Item 83", "Item 84", "Item 85", "Item 86", "Item 87", "Item 88", "Item 89", "Item 90",
+            "Item 91", "Item 92", "Item 93", "Item 94", "Item 95", "Item 96", "Item 97", "Item 98", "Item 99", "Item 100"
+        ];
+
+        // Data stores
+        let quantities = {};
+        let activeOrders = [];
+        let historyOrders = [];
+
+        // Initialize item counts based on layout configurations
+        itemNames.forEach((name, index) => {
+            const id = index + 1; // ID matches image numbers starting at 1
+            quantities[id] = 0;
+        });
+
+        // Generate Item Grid UI dynamically using custom names
+        const grid = document.getElementById('items-grid');
+        itemNames.forEach((name, index) => {
+            const id = index + 1;
+            const card = document.createElement('div');
+            card.className = 'item-card';
+            card.innerHTML = `
+                <img src="${id}.png" alt="${name}" onerror="this.src='https://via.placeholder.com/150/e6f2ff/0076ff?text=${id}'">
+                <div class="item-name">${name}</div>
+                <div class="controls">
+                    <button onclick="updateQty(${id}, -1)">-</button>
+                    <span class="count" id="count-${id}">0</span>
+                    <button onclick="updateQty(${id}, 1)">+</button>
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+
+        // Password Verification
+        function checkPassword() {
+            const pass = document.getElementById('password-input').value;
+            if (pass === "talabat1234") {
+                document.getElementById('password-screen').style.display = 'none';
+                document.getElementById('app-screen').style.display = 'block';
+            } else {
+                alert("Incorrect password!");
+            }
+        }
+
+        // Quantity adjustments
+        function updateQty(id, change) {
+            let current = quantities[id];
+            current += change;
+            if (current < 0) current = 0;
+            quantities[id] = current;
+            document.getElementById(`count-${id}`).innerText = current;
+        }
+
+        // Tab switching functionality
+        function switchTab(tab) {
+            const orderView = document.getElementById('order-view');
+            const listView = document.getElementById('list-view');
+            const navOrder = document.getElementById('nav-order');
+            const navList = document.getElementById('nav-list');
+            const title = document.getElementById('page-title');
+            const sendBtn = document.getElementById('header-send-btn');
+
+            if (tab === 'order') {
+                orderView.style.display = 'block';
+                listView.style.display = 'none';
+                navOrder.classList.add('active');
+                navList.classList.remove('active');
+                title.innerText = "Order";
+                sendBtn.style.display = 'block';
+            } else {
+                orderView.style.display = 'none';
+                listView.style.display = 'block';
+                navOrder.classList.remove('active');
+                navList.classList.add('active');
+                title.innerText = "List";
+                sendBtn.style.display = 'none';
+                renderActiveList();
+            }
+        }
+
+        // Send logic -> compiles active quantities into the master list
+        function sendOrder() {
+            let addedAnything = false;
+            itemNames.forEach((name, index) => {
+                const id = index + 1;
+                if (quantities[id] > 0) {
+                    activeOrders.push({
+                        id: id,
+                        name: name,
+                        qty: quantities[id],
+                        timestamp: new Date()
+                    });
+                    // Reset counter back to zero after sending
+                    quantities[id] = 0;
+                    document.getElementById(`count-${id}`).innerText = 0;
+                    addedAnything = true;
+                }
+            });
+
+            if (addedAnything) {
+                alert("Items added to List!");
+                switchTab('list');
+            } else {
+                alert("Please add some items first!");
+            }
+        }
+
+        // Render standard active items inside List tab
+        function renderActiveList() {
+            const container = document.getElementById('active-list');
+            container.innerHTML = '';
+
+            if (activeOrders.length === 0) {
+                container.innerHTML = '<div class="empty-msg">No active items in your list.</div>';
+                return;
+            }
+
+            activeOrders.forEach((item, index) => {
+                const row = document.createElement('div');
+                row.className = 'list-item';
+                row.innerHTML = `
+                    <div class="list-item-left">
+                        <img src="${item.id}.png" onerror="this.src='https://via.placeholder.com/150/e6f2ff/0076ff?text=${item.id}'">
+                        <div class="list-item-info">
+                            <strong>${item.name}</strong>
+                            <span class="qty-badge">x${item.qty}</span>
+                        </div>
+                    </div>
+                    <div class="circle-checkbox" onclick="checkOffItem(${index})"></div>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        // Checkmark animation, wait, move to history, and delete from original list
+        function checkOffItem(index) {
+            const checkboxes = document.querySelectorAll('#active-list .circle-checkbox');
+            const targetBox = checkboxes[index];
+            
+            targetBox.classList.add('checked');
+
+            setTimeout(() => {
+                // Set the exact time it was completed
+                activeOrders[index].completedAt = new Date();
+                
+                // Push item copy over to history array
+                historyOrders.push(activeOrders[index]);
+                
+                // Remove item out of active items array
+                activeOrders.splice(index, 1);
+                
+                // Re-render display
+                renderActiveList();
+            }, 400);
+        }
+
+        // Clean out history array of items older than 30 minutes
+        function cleanExpiredHistory() {
+            const now = new Date();
+            historyOrders = historyOrders.filter(item => {
+                const diffInMinutes = (now - item.completedAt) / 1000 / 60;
+                return diffInMinutes <= 30;
+            });
+        }
+
+        // Open history layer overlay
+        function openHistory() {
+            cleanExpiredHistory();
+            const modal = document.getElementById('history-modal');
+            const historyList = document.getElementById('history-list');
+            modal.style.display = 'flex';
+            historyList.innerHTML = '';
+
+            if (historyOrders.length === 0) {
+                historyList.innerHTML = '<div class="empty-msg">No history records in the last 30 minutes.</div>';
+                return;
+            }
+
+            // Loop backwards to show newest checked items at top
+            for (let i = historyOrders.length - 1; i >= 0; i--) {
+                const item = historyOrders[i];
+                const timeString = item.completedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                
+                const row = document.createElement('div');
+                row.className = 'list-item';
+                row.innerHTML = `
+                    <div class="list-item-left">
+                        <img src="${item.id}.png" onerror="this.src='https://via.placeholder.com/150/e6f2ff/0076ff?text=${item.id}'">
+                        <div class="list-item-info">
+                            <strong>${item.name}</strong>
+                            <span class="qty-badge" style="background-color: #e6fcf5; color: var(--success);">x${item.qty}</span>
+                            <div class="timestamp">Checked at: ${timeString}</div>
+                        </div>
+                    </div>
+                    <div class="circle-checkbox checked" style="pointer-events: none;"></div>
+                `;
+                historyList.appendChild(row);
+            }
+        }
+
+        function closeHistory() {
+            document.getElementById('history-modal').style.display = 'none';
+        }
+
+        // Close history window if background overlay clicked directly
+        window.onclick = function(event) {
+            const modal = document.getElementById('history-modal');
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+    </script>
+</body>
+</html>
