@@ -139,6 +139,22 @@
             background-color: var(--primary-hover);
         }
 
+        .custom-btn {
+            background-color: #718096;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .custom-btn:hover {
+            background-color: #4a5568;
+        }
+
         .history-btn {
             background-color: var(--primary-light);
             border: none;
@@ -266,6 +282,21 @@
             object-fit: cover;
             border-radius: 8px;
             background-color: #f7fafc;
+        }
+
+        .custom-placeholder {
+            width: 54px;
+            height: 54px;
+            border-radius: 8px;
+            background-color: #edf2f7;
+            color: #718096;
+            font-size: 11px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-transform: uppercase;
+            border: 1px dashed #cbd5e0;
         }
 
         .list-item-info strong {
@@ -418,14 +449,14 @@
         // CHANGE YOUR ITEM NAMES HERE!
         // =========================================================================
         const itemNames = [
-            "Milk", "Eggs", "Lusine", "Grapes", "Apples", "Bananas", "School Bread", "Burger", "Burger Bun", "Juice",
-            "Yoghurt", "Soda", "Kinza Cola", "Ketchup", "Butter", "Neo", "Macaroni", "Farfasha", "Toast", "Flour",
-            "Tea", "Green Tea", "Biscuits", "PopCorn", "School milk", "School Juice", "Cucumbers", "Choc Pudding", "Protein Choc Milk", "Choc Milk",
-            "Sugar", "", "", "", "", "Item 36", "Item 37", "Item 38", "Item 39", "Item 40",
+            "Milk", "Bread", "Eggs", "Item 4", "Item 5", "Item 6", "Item 7", "Item 8", "Item 9", "Item 10",
+            "Item 11", "Item 12", "Item 13", "Item 14", "Item 15", "Item 16", "Item 17", "Item 18", "Item 19", "Item 20",
+            "Item 21", "Item 22", "Item 23", "Item 24", "Item 25", "Item 26", "Item 27", "Item 28", "Item 29", "Item 30",
+            "Item 31", "Item 32", "Item 33", "Item 34", "Item 35", "Item 36", "Item 37", "Item 38", "Item 39", "Item 40",
             "Item 41", "Item 42", "Item 43", "Item 44", "Item 45", "Item 46", "Item 47", "Item 48", "Item 49", "Item 50",
             "Item 51", "Item 52", "Item 53", "Item 54", "Item 55", "Item 56", "Item 57", "Item 58", "Item 59", "Item 60",
             "Item 61", "Item 62", "Item 63", "Item 64", "Item 65", "Item 66", "Item 67", "Item 68", "Item 69", "Item 70",
-            "Item 71", "Item 72", "Item 73", "Item 74", "Item 75", "Item 76", "Item 77", "Item 78", "Item 79", "Item 80",
+            "Item 71", "Item 72", "Item 73", "Item 74", "Item 75", "76", "Item 77", "Item 78", "Item 79", "Item 80",
             "Item 81", "Item 82", "Item 83", "Item 84", "Item 85", "Item 86", "Item 87", "Item 88", "Item 89", "Item 90",
             "Item 91", "Item 92", "Item 93", "Item 94", "Item 95", "Item 96", "Item 97", "Item 98", "Item 99", "Item 100"
         ];
@@ -498,6 +529,7 @@
                         id: id,
                         name: name,
                         qty: quantities[id],
+                        isCustom: false,
                         timestamp: new Date().getTime()
                     });
                     quantities[id] = 0;
@@ -512,6 +544,31 @@
             } else {
                 alert("Please add some items first!");
             }
+        }
+
+        // Add an entirely custom typed item
+        function addCustomItem() {
+            const customName = prompt("Enter custom item name:");
+            if (!customName || customName.trim() === "") return;
+
+            const customQtyString = prompt(`How many "${customName}" do you want to add?`, "1");
+            const customQty = parseInt(customQtyString, 10);
+            if (isNaN(customQty) || customQty <= 0) {
+                alert("Please enter a valid quantity number.");
+                return;
+            }
+
+            const activeRef = ref(db, 'orders/active');
+            push(activeRef, {
+                id: "custom",
+                name: customName.trim(),
+                qty: customQty,
+                isCustom: true,
+                timestamp: new Date().getTime()
+            });
+
+            alert(`"${customName}" added to List globally!`);
+            switchTab('list');
         }
 
         // Fetch live database updates continuously
@@ -548,9 +605,16 @@
             activeOrders.forEach((item) => {
                 const row = document.createElement('div');
                 row.className = 'list-item';
+
+                // Choose between regular image markup and custom textual fallback placeholder
+                let mediaElement = `<img src="${item.id}.png" onerror="this.src='https://via.placeholder.com/150/e6f2ff/0076ff?text=${item.id}'">`;
+                if (item.isCustom) {
+                    mediaElement = `<div class="custom-placeholder">Custom</div>`;
+                }
+
                 row.innerHTML = `
                     <div class="list-item-left">
-                        <img src="${item.id}.png" onerror="this.src='https://via.placeholder.com/150/e6f2ff/0076ff?text=${item.id}'">
+                        ${mediaElement}
                         <div class="list-item-info">
                             <strong>${item.name}</strong>
                             <span class="qty-badge">x${item.qty}</span>
@@ -568,15 +632,19 @@
         }
 
         function checkOffItem(item) {
+            // Remove completely from active node structure
             set(ref(db, `orders/active/${item.firebaseKey}`), null);
 
-            const historyRef = ref(db, 'orders/history');
-            push(historyRef, {
-                id: item.id,
-                name: item.name,
-                qty: item.qty,
-                completedAt: new Date().getTime()
-            });
+            // Only push to past logging timeline if it is NOT a custom item
+            if (!item.isCustom) {
+                const historyRef = ref(db, 'orders/history');
+                push(historyRef, {
+                    id: item.id,
+                    name: item.name,
+                    qty: item.qty,
+                    completedAt: new Date().getTime()
+                });
+            }
         }
 
         function openHistory() {
@@ -638,6 +706,7 @@
             const navList = document.getElementById('nav-list');
             const title = document.getElementById('page-title');
             const sendBtn = document.getElementById('header-send-btn');
+            const customBtn = document.getElementById('header-custom-btn');
 
             if (tab === 'order') {
                 orderView.style.display = 'block';
@@ -646,6 +715,7 @@
                 navList.classList.remove('active');
                 title.innerText = "Order";
                 sendBtn.style.display = 'block';
+                customBtn.style.display = 'block';
             } else {
                 orderView.style.display = 'none';
                 listView.style.display = 'block';
@@ -653,11 +723,13 @@
                 navList.classList.add('active');
                 title.innerText = "List";
                 sendBtn.style.display = 'none';
+                customBtn.style.display = 'none';
                 renderActiveList();
             }
         };
 
         document.getElementById('header-send-btn').addEventListener('click', sendOrder);
+        document.getElementById('header-custom-btn').addEventListener('click', addCustomItem);
         document.getElementById('open-history-btn').addEventListener('click', openHistory);
     </script>
 </head>
@@ -677,6 +749,7 @@
         <header>
             <h1 id="page-title">Order</h1>
             <div class="header-actions">
+                <button class="custom-btn" id="header-custom-btn">Custom Items</button>
                 <button class="send-btn" id="header-send-btn">Send</button>
                 <button class="history-btn" id="open-history-btn">History</button>
             </div>
