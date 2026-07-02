@@ -446,23 +446,54 @@
         import { getDatabase, ref, set, push, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         // =========================================================================
-        // CHANGE YOUR ITEM NAMES HERE!
+        // ITEMS LIST (Dynamically matching filenames and accurate titles)
         // =========================================================================
-        const itemNames = [
-            "Milk", "Bread", "Eggs", "Item 4", "Item 5", "Item 6", "Item 7", "Item 8", "Item 9", "Item 10",
-            "Item 11", "Item 12", "Item 13", "Item 14", "Item 15", "Item 16", "Item 17", "Item 18", "Item 19", "Item 20",
-            "Item 21", "Item 22", "Item 23", "Item 24", "Item 25", "Item 26", "Item 27", "Item 28", "Item 29", "Item 30",
-            "Item 31", "Item 32", "Item 33", "Item 34", "Item 35", "Item 36", "Item 37", "Item 38", "Item 39", "Item 40",
-            "Item 41", "Item 42", "Item 43", "Item 44", "Item 45", "Item 46", "Item 47", "Item 48", "Item 49", "Item 50",
-            "Item 51", "Item 52", "Item 53", "Item 54", "Item 55", "Item 56", "Item 57", "Item 58", "Item 59", "Item 60",
-            "Item 61", "Item 62", "Item 63", "Item 64", "Item 65", "Item 66", "Item 67", "Item 68", "Item 69", "Item 70",
-            "Item 71", "Item 72", "Item 73", "Item 74", "Item 75", "76", "Item 77", "Item 78", "Item 79", "Item 80",
-            "Item 81", "Item 82", "Item 83", "Item 84", "Item 85", "Item 86", "Item 87", "Item 88", "Item 89", "Item 90",
-            "Item 91", "Item 92", "Item 93", "Item 94", "Item 95", "Item 96", "Item 97", "Item 98", "Item 99", "Item 100"
+        const itemsConfig = [
+            { name: "Tissues", img: "images (1).jpg" },
+            { name: "Creme Caramel", img: "images (2).jpg" },
+            { name: "Cling Film", img: "images (3).jpg" },
+            { name: "Onions", img: "images (4).jpg" },
+            { name: "Potatoes", img: "images (5).jpg" },
+            { name: "Molokhia", img: "images (6).jpg" },
+            { name: "Mayonnaise", img: "images (7).jpg" },
+            { name: "Raw Chicken", img: "images (8).jpg" },
+            { name: "Trash Bags", img: "images (9).jpg" },
+            { name: "Dishwashing Liquid", img: "shopping.avif" },
+            { name: "Milk", img: "1.png" },
+            { name: "Eggs", img: "2.png" },
+            { name: "Lusine", img: "3.png" },
+            { name: "Green Grapes", img: "4.png" },
+            { name: "Green Apple", img: "5.png" },
+            { name: "Bananas", img: "6.png" },
+            { name: "Pasta", img: "7.png" },
+            { name: "Burger Patties", img: "8.png" },
+            { name: "Burger Buns", img: "9.png" },
+            { name: "Berry Juice", img: "10.png" },
+            { name: "Yogurt", img: "11.png" },
+            { name: "Soda", img: "12.png" },
+            { name: "Kinza Cola", img: "13.png" },
+            { name: "Ketchup", img: "14.png" },
+            { name: "Butter", img: "15.png" },
+            { name: "Chocolate Biscuits", img: "16.png" },
+            { name: "Macaroni and Cheese", img: "17.png" },
+            { name: "Cheese Chips", img: "18.png" },
+            { name: "Sliced Bread", img: "19.png" },
+            { name: "Flour", img: "20.png" },
+            { name: "Tea Bags", img: "21.png" },
+            { name: "Popcorn Box", img: "22.png" },
+            { name: "Biscuits", img: "23.png" },
+            { name: "Popcorn", img: "24.png" },
+            { name: "Cooking Cream", img: "25.png" },
+            { name: "Fruit Juice", img: "26.png" },
+            { name: "Cucumbers", img: "27.png" },
+            { name: "Chocolate Pudding", img: "28.png" },
+            { name: "Protein Milk", img: "29.png" },
+            { name: "Protein Milk", img: "30.png" },
+            { name: "Sugar", img: "31.png" }
         ];
 
         // =========================================================================
-        // AUTOMATICALLY COPIED FROM YOUR SCREENSHOT 2026-06-27 044536.JPG
+        // FIREBASE SETTINGS
         // =========================================================================
         const firebaseConfig = {
             apiKey: "AIzaSyBh8cPnt3MovP0vf1Qi3zU0LVcXYC3RNKA",
@@ -484,19 +515,19 @@
         let historyOrders = [];
 
         // Setup local quantities structure
-        itemNames.forEach((name, index) => {
+        itemsConfig.forEach((item, index) => {
             quantities[index + 1] = 0;
         });
 
         // Generate Item Grid UI Layout
         const grid = document.getElementById('items-grid');
-        itemNames.forEach((name, index) => {
+        itemsConfig.forEach((item, index) => {
             const id = index + 1;
             const card = document.createElement('div');
             card.className = 'item-card';
             card.innerHTML = `
-                <img src="${id}.png" alt="${name}" onerror="this.src='https://via.placeholder.com/150/e6f2ff/0076ff?text=${id}'">
-                <div class="item-name">${name}</div>
+                <img src="${item.img}" alt="${item.name}" onerror="this.src='https://via.placeholder.com/150/e6f2ff/0076ff?text=${id}'">
+                <div class="item-name">${item.name}</div>
                 <div class="controls">
                     <button id="minus-${id}">-</button>
                     <span class="count" id="count-${id}">0</span>
@@ -521,13 +552,14 @@
         // Send orders up into global shared cloud node
         function sendOrder() {
             let addedAnything = false;
-            itemNames.forEach((name, index) => {
+            itemsConfig.forEach((item, index) => {
                 const id = index + 1;
                 if (quantities[id] > 0) {
                     const activeRef = ref(db, 'orders/active');
                     push(activeRef, {
                         id: id,
-                        name: name,
+                        name: item.name,
+                        img: item.img,
                         qty: quantities[id],
                         isCustom: false,
                         timestamp: new Date().getTime()
@@ -607,7 +639,7 @@
                 row.className = 'list-item';
 
                 // Choose between regular image markup and custom textual fallback placeholder
-                let mediaElement = `<img src="${item.id}.png" onerror="this.src='https://via.placeholder.com/150/e6f2ff/0076ff?text=${item.id}'">`;
+                let mediaElement = `<img src="${item.img || (item.id + '.png')}" onerror="this.src='https://via.placeholder.com/150/e6f2ff/0076ff?text=${item.id}'">`;
                 if (item.isCustom) {
                     mediaElement = `<div class="custom-placeholder">Custom</div>`;
                 }
@@ -641,6 +673,7 @@
                 push(historyRef, {
                     id: item.id,
                     name: item.name,
+                    img: item.img || '',
                     qty: item.qty,
                     completedAt: new Date().getTime()
                 });
@@ -676,7 +709,7 @@
                 row.className = 'list-item';
                 row.innerHTML = `
                     <div class="list-item-left">
-                        <img src="${item.id}.png" onerror="this.src='https://via.placeholder.com/150/e6f2ff/0076ff?text=${item.id}'">
+                        <img src="${item.img || (item.id + '.png')}" onerror="this.src='https://via.placeholder.com/150/e6f2ff/0076ff?text=${item.id}'">
                         <div class="list-item-info">
                             <strong>${item.name}</strong>
                             <span class="qty-badge" style="background-color: #e6fcf5; color: var(--success);">x${item.qty}</span>
