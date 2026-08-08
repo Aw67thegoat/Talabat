@@ -423,12 +423,11 @@
         }
     </style>
 
-    <!-- Load Firebase SDK Modules -->
+    <!-- Firebase Configuration & Setup Module -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, set, push, onValue, onChildAdded } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getDatabase, ref, set, push, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // ITEMS LIST
         const itemsConfig = [
             { name: "Tissues", img: "images (1).jpg" },
             { name: "Creme Caramel", img: "images (2).jpg" },
@@ -473,7 +472,6 @@
             { name: "Sugar", img: "31.png" }
         ];
 
-        // FIREBASE SETTINGS
         const firebaseConfig = {
             apiKey: "AIzaSyBh8cPnt3MovP0vf1Qi3zU0LVcXYC3RNKA",
             authDomain: "talabat-78707.firebaseapp.com",
@@ -489,32 +487,6 @@
 
         let activeOrders = [];
         let historyOrders = [];
-        let appLoadedTime = new Date().getTime(); 
-
-        document.addEventListener("DOMContentLoaded", () => {
-            const grid = document.getElementById('items-grid');
-            itemsConfig.forEach((item, index) => {
-                const id = index + 1;
-                const card = document.createElement('div');
-                card.className = 'item-card';
-                card.innerHTML = `
-                    <img src="${item.img}" alt="${item.name}" onerror="this.src='https://via.placeholder.com/150/e6f2ff/0076ff?text=${id}'">
-                    <div class="item-name">${item.name}</div>
-                    <div class="controls">
-                        <button id="minus-${id}">-</button>
-                        <span class="count" id="count-${id}">0</span>
-                        <button id="plus-${id}">+</button>
-                    </div>
-                `;
-                grid.appendChild(card);
-
-                card.querySelector(`#minus-${id}`).addEventListener('click', () => updateQuantityInFirebase(id, -1, item.name, item.img));
-                card.querySelector(`#plus-${id}`).addEventListener('click', () => updateQuantityInFirebase(id, 1, item.name, item.img));
-            });
-
-            document.getElementById('header-custom-btn').addEventListener('click', addCustomItem);
-            document.getElementById('open-history-btn').addEventListener('click', openHistory);
-        });
 
         function updateQuantityInFirebase(id, change, itemName, itemImg) {
             const existingItem = activeOrders.find(item => item.id === id && !item.isCustom);
@@ -543,7 +515,7 @@
             }
         }
 
-        function addCustomItem() {
+        window.addCustomItem = function() {
             const customName = prompt("Enter custom item name:");
             if (!customName || customName.trim() === "") return;
 
@@ -562,43 +534,85 @@
                 isCustom: true,
                 timestamp: new Date().getTime()
             });
-        }
+        };
 
-        // Realtime Sync Listener for Active Orders
-        onValue(ref(db, 'orders/active'), (snapshot) => {
-            activeOrders = [];
-            const data = snapshot.val();
-            
-            // Reset grid UI counters to 0 first
-            itemsConfig.forEach((_, index) => {
-                const el = document.getElementById(`count-${index + 1}`);
-                if (el) el.innerText = '0';
+        window.checkPassword = function() {
+            const pass = document.getElementById('password-input').value;
+            if (pass === "talabat1234") {
+                document.getElementById('password-screen').style.display = 'none';
+                document.getElementById('app-screen').style.display = 'block';
+            } else {
+                alert("Incorrect password!");
+            }
+        };
+
+        window.switchTab = function(tab) {
+            const orderView = document.getElementById('order-view');
+            const listView = document.getElementById('list-view');
+            const navOrder = document.getElementById('nav-order');
+            const navList = document.getElementById('nav-list');
+            const title = document.getElementById('page-title');
+            const customBtn = document.getElementById('header-custom-btn');
+
+            if (tab === 'order') {
+                orderView.style.display = 'block';
+                listView.style.display = 'none';
+                navOrder.classList.add('active');
+                navList.classList.remove('active');
+                title.innerText = "Order";
+                customBtn.style.display = 'block';
+            } else {
+                orderView.style.display = 'none';
+                listView.style.display = 'block';
+                navOrder.classList.remove('active');
+                navList.classList.add('active');
+                title.innerText = "List";
+                customBtn.style.display = 'none';
+                renderActiveList();
+            }
+        };
+
+        window.openHistory = function() {
+            const now = new Date().getTime();
+            const modal = document.getElementById('history-modal');
+            const historyList = document.getElementById('history-list');
+            modal.style.display = 'flex';
+            historyList.innerHTML = '';
+
+            const validHistory = historyOrders.filter(item => {
+                const diffInMinutes = (now - item.completedAt) / 1000 / 60;
+                if (diffInMinutes > 30) {
+                    set(ref(db, `orders/history/${item.firebaseKey}`), null);
+                    return false;
+                }
+                return true;
             });
 
-            if (data) {
-                Object.keys(data).forEach(key => {
-                    const item = { firebaseKey: key, ...data[key] };
-                    activeOrders.push(item);
-
-                    // Sync count to order card
-                    if (!item.isCustom && item.id) {
-                        const countEl = document.getElementById(`count-${item.id}`);
-                        if (countEl) countEl.innerText = item.qty;
-                    }
-                });
+            if (validHistory.length === 0) {
+                historyList.innerHTML = '<div class="empty-msg">No history records in the last 30 minutes.</div>';
+                return;
             }
-            renderActiveList();
-        });
 
-        onValue(ref(db, 'orders/history'), (snapshot) => {
-            historyOrders = [];
-            const data = snapshot.val();
-            if (data) {
-                Object.keys(data).forEach(key => {
-                    historyOrders.push({ firebaseKey: key, ...data[key] });
-                });
+            for (let i = validHistory.length - 1; i >= 0; i--) {
+                const item = validHistory[i];
+                const timeString = new Date(item.completedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                
+                const row = document.createElement('div');
+                row.className = 'list-item';
+                row.innerHTML = `
+                    <div class="list-item-left">
+                        <img src="${item.img || (item.id + '.png')}" onerror="this.src='https://via.placeholder.com/150/e6f2ff/0076ff?text=${item.id}'">
+                        <div class="list-item-info">
+                            <strong>${item.name}</strong>
+                            <span class="qty-badge" style="background-color: #e6fcf5; color: var(--success);">x${item.qty}</span>
+                            <div class="timestamp">Checked at: ${timeString}</div>
+                        </div>
+                    </div>
+                    <div class="circle-checkbox checked" style="pointer-events: none;"></div>
+                `;
+                historyList.appendChild(row);
             }
-        });
+        };
 
         function renderActiveList() {
             const container = document.getElementById('active-list');
@@ -652,83 +666,70 @@
             }
         }
 
-        function openHistory() {
-            const now = new Date().getTime();
-            const modal = document.getElementById('history-modal');
-            const historyList = document.getElementById('history-list');
-            modal.style.display = 'flex';
-            historyList.innerHTML = '';
+        // Initialize DOM Elements and Event Handlers
+        document.addEventListener("DOMContentLoaded", () => {
+            const grid = document.getElementById('items-grid');
+            itemsConfig.forEach((item, index) => {
+                const id = index + 1;
+                const card = document.createElement('div');
+                card.className = 'item-card';
+                card.innerHTML = `
+                    <img src="${item.img}" alt="${item.name}" onerror="this.src='https://via.placeholder.com/150/e6f2ff/0076ff?text=${id}'">
+                    <div class="item-name">${item.name}</div>
+                    <div class="controls">
+                        <button id="minus-${id}">-</button>
+                        <span class="count" id="count-${id}">0</span>
+                        <button id="plus-${id}">+</button>
+                    </div>
+                `;
+                grid.appendChild(card);
 
-            const validHistory = historyOrders.filter(item => {
-                const diffInMinutes = (now - item.completedAt) / 1000 / 60;
-                if (diffInMinutes > 30) {
-                    set(ref(db, `orders/history/${item.firebaseKey}`), null);
-                    return false;
-                }
-                return true;
+                card.querySelector(`#minus-${id}`).addEventListener('click', () => updateQuantityInFirebase(id, -1, item.name, item.img));
+                card.querySelector(`#plus-${id}`).addEventListener('click', () => updateQuantityInFirebase(id, 1, item.name, item.img));
             });
 
-            if (validHistory.length === 0) {
-                historyList.innerHTML = '<div class="empty-msg">No history records in the last 30 minutes.</div>';
-                return;
-            }
+            document.getElementById('header-custom-btn').addEventListener('click', () => window.addCustomItem());
+            document.getElementById('open-history-btn').addEventListener('click', () => window.openHistory());
+            
+            // Password keypress enter
+            document.getElementById('password-input').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') window.checkPassword();
+            });
+        });
 
-            for (let i = validHistory.length - 1; i >= 0; i--) {
-                const item = validHistory[i];
-                const timeString = new Date(item.completedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                
-                const row = document.createElement('div');
-                row.className = 'list-item';
-                row.innerHTML = `
-                    <div class="list-item-left">
-                        <img src="${item.img || (item.id + '.png')}" onerror="this.src='https://via.placeholder.com/150/e6f2ff/0076ff?text=${item.id}'">
-                        <div class="list-item-info">
-                            <strong>${item.name}</strong>
-                            <span class="qty-badge" style="background-color: #e6fcf5; color: var(--success);">x${item.qty}</span>
-                            <div class="timestamp">Checked at: ${timeString}</div>
-                        </div>
-                    </div>
-                    <div class="circle-checkbox checked" style="pointer-events: none;"></div>
-                `;
-                historyList.appendChild(row);
-            }
-        }
+        // Realtime Firebase Listeners
+        onValue(ref(db, 'orders/active'), (snapshot) => {
+            activeOrders = [];
+            const data = snapshot.val();
+            
+            itemsConfig.forEach((_, index) => {
+                const el = document.getElementById(`count-${index + 1}`);
+                if (el) el.innerText = '0';
+            });
 
-        window.checkPassword = function() {
-            const pass = document.getElementById('password-input').value;
-            if (pass === "talabat1234") {
-                document.getElementById('password-screen').style.display = 'none';
-                document.getElementById('app-screen').style.display = 'block';
-            } else {
-                alert("Incorrect password!");
-            }
-        };
+            if (data) {
+                Object.keys(data).forEach(key => {
+                    const item = { firebaseKey: key, ...data[key] };
+                    activeOrders.push(item);
 
-        window.switchTab = function(tab) {
-            const orderView = document.getElementById('order-view');
-            const listView = document.getElementById('list-view');
-            const navOrder = document.getElementById('nav-order');
-            const navList = document.getElementById('nav-list');
-            const title = document.getElementById('page-title');
-            const customBtn = document.getElementById('header-custom-btn');
-
-            if (tab === 'order') {
-                orderView.style.display = 'block';
-                listView.style.display = 'none';
-                navOrder.classList.add('active');
-                navList.classList.remove('active');
-                title.innerText = "Order";
-                customBtn.style.display = 'block';
-            } else {
-                orderView.style.display = 'none';
-                listView.style.display = 'block';
-                navOrder.classList.remove('active');
-                navList.classList.add('active');
-                title.innerText = "List";
-                customBtn.style.display = 'none';
-                renderActiveList();
+                    if (!item.isCustom && item.id) {
+                        const countEl = document.getElementById(`count-${item.id}`);
+                        if (countEl) countEl.innerText = item.qty;
+                    }
+                });
             }
-        };
+            renderActiveList();
+        });
+
+        onValue(ref(db, 'orders/history'), (snapshot) => {
+            historyOrders = [];
+            const data = snapshot.val();
+            if (data) {
+                Object.keys(data).forEach(key => {
+                    historyOrders.push({ firebaseKey: key, ...data[key] });
+                });
+            }
+        });
     </script>
 </head>
 <body>
