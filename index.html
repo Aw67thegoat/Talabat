@@ -122,23 +122,6 @@
             align-items: center;
         }
 
-        .send-btn {
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            padding: 8px 20px;
-            font-size: 14px;
-            font-weight: 600;
-            border-radius: 20px;
-            cursor: pointer;
-            box-shadow: 0 4px 10px rgba(0, 118, 255, 0.2);
-            transition: background-color 0.2s;
-        }
-
-        .send-btn:hover {
-            background-color: var(--primary-hover);
-        }
-
         .custom-btn {
             background-color: #718096;
             color: white;
@@ -445,9 +428,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, set, push, onValue, onChildAdded } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // =========================================================================
         // ITEMS LIST
-        // =========================================================================
         const itemsConfig = [
             { name: "Tissues", img: "images (1).jpg" },
             { name: "Creme Caramel", img: "images (2).jpg" },
@@ -492,9 +473,7 @@
             { name: "Sugar", img: "31.png" }
         ];
 
-        // =========================================================================
         // FIREBASE SETTINGS
-        // =========================================================================
         const firebaseConfig = {
             apiKey: "AIzaSyBh8cPnt3MovP0vf1Qi3zU0LVcXYC3RNKA",
             authDomain: "talabat-78707.firebaseapp.com",
@@ -508,75 +487,59 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        let quantities = {};
         let activeOrders = [];
         let historyOrders = [];
         let appLoadedTime = new Date().getTime(); 
 
-        itemsConfig.forEach((item, index) => {
-            quantities[index + 1] = 0;
-        });
-
-        // Request browser permission for native push notifications
-        if ("Notification" in window) {
-            if (Notification.permission !== "granted" && Notification.permission !== "denied") {
-                Notification.requestPermission();
-            }
-        }
-
-        const grid = document.getElementById('items-grid');
-        itemsConfig.forEach((item, index) => {
-            const id = index + 1;
-            const card = document.createElement('div');
-            card.className = 'item-card';
-            card.innerHTML = `
-                <img src="${item.img}" alt="${item.name}" onerror="this.src='https://via.placeholder.com/150/e6f2ff/0076ff?text=${id}'">
-                <div class="item-name">${item.name}</div>
-                <div class="controls">
-                    <button id="minus-${id}">-</button>
-                    <span class="count" id="count-${id}">0</span>
-                    <button id="plus-${id}">+</button>
-                </div>
-            `;
-            grid.appendChild(card);
-
-            card.querySelector(`#minus-${id}`).addEventListener('click', () => updateQty(id, -1));
-            card.querySelector(`#plus-${id}`).addEventListener('click', () => updateQty(id, 1));
-        });
-
-        function updateQty(id, change) {
-            let current = quantities[id];
-            current += change;
-            if (current < 0) current = 0;
-            quantities[id] = current;
-            document.getElementById(`count-${id}`).innerText = current;
-        }
-
-        function sendOrder() {
-            let addedAnything = false;
+        document.addEventListener("DOMContentLoaded", () => {
+            const grid = document.getElementById('items-grid');
             itemsConfig.forEach((item, index) => {
                 const id = index + 1;
-                if (quantities[id] > 0) {
-                    const activeRef = ref(db, 'orders/active');
-                    push(activeRef, {
-                        id: id,
-                        name: item.name,
-                        img: item.img,
-                        qty: quantities[id],
-                        isCustom: false,
-                        timestamp: new Date().getTime()
-                    });
-                    quantities[id] = 0;
-                    document.getElementById(`count-${id}`).innerText = 0;
-                    addedAnything = true;
-                }
+                const card = document.createElement('div');
+                card.className = 'item-card';
+                card.innerHTML = `
+                    <img src="${item.img}" alt="${item.name}" onerror="this.src='https://via.placeholder.com/150/e6f2ff/0076ff?text=${id}'">
+                    <div class="item-name">${item.name}</div>
+                    <div class="controls">
+                        <button id="minus-${id}">-</button>
+                        <span class="count" id="count-${id}">0</span>
+                        <button id="plus-${id}">+</button>
+                    </div>
+                `;
+                grid.appendChild(card);
+
+                card.querySelector(`#minus-${id}`).addEventListener('click', () => updateQuantityInFirebase(id, -1, item.name, item.img));
+                card.querySelector(`#plus-${id}`).addEventListener('click', () => updateQuantityInFirebase(id, 1, item.name, item.img));
             });
 
-            if (addedAnything) {
-                alert("Items added to List globally!");
-                switchTab('list');
-            } else {
-                alert("Please add some items first!");
+            document.getElementById('header-custom-btn').addEventListener('click', addCustomItem);
+            document.getElementById('open-history-btn').addEventListener('click', openHistory);
+        });
+
+        function updateQuantityInFirebase(id, change, itemName, itemImg) {
+            const existingItem = activeOrders.find(item => item.id === id && !item.isCustom);
+
+            if (existingItem) {
+                const newQty = existingItem.qty + change;
+                if (newQty <= 0) {
+                    set(ref(db, `orders/active/${existingItem.firebaseKey}`), null);
+                } else {
+                    set(ref(db, `orders/active/${existingItem.firebaseKey}`), {
+                        ...existingItem,
+                        qty: newQty,
+                        timestamp: new Date().getTime()
+                    });
+                }
+            } else if (change > 0) {
+                const activeRef = ref(db, 'orders/active');
+                push(activeRef, {
+                    id: id,
+                    name: itemName,
+                    img: itemImg,
+                    qty: 1, 
+                    isCustom: false,
+                    timestamp: new Date().getTime()
+                });
             }
         }
 
@@ -593,42 +556,35 @@
 
             const activeRef = ref(db, 'orders/active');
             push(activeRef, {
-                id: "custom",
+                id: "custom_" + Date.now(),
                 name: customName.trim(),
                 qty: customQty,
                 isCustom: true,
                 timestamp: new Date().getTime()
             });
-
-            alert(`"${customName}" added to List globally!`);
-            switchTab('list');
         }
 
-        // --- NOTIFICATION HANDLER ---
-        // Listens explicitly for newly added child entries in the active list node
-        onChildAdded(ref(db, 'orders/active'), (snapshot) => {
-            const newItem = snapshot.val();
-            // Verify item was created AFTER app initialized to prevent firing old historical updates on startup
-            if (newItem && newItem.timestamp > appLoadedTime) {
-                triggerNativeNotification(newItem.name, newItem.qty);
-            }
-        });
-
-        function triggerNativeNotification(itemName, quantity) {
-            if ("Notification" in window && Notification.permission === "granted") {
-                new Notification("New Item Added! 🛒", {
-                    body: `${itemName} (x${quantity}) was added to the order list.`,
-                    icon: "https://via.placeholder.com/128/0076ff/ffffff?text=New+Item"
-                });
-            }
-        }
-
+        // Realtime Sync Listener for Active Orders
         onValue(ref(db, 'orders/active'), (snapshot) => {
             activeOrders = [];
             const data = snapshot.val();
+            
+            // Reset grid UI counters to 0 first
+            itemsConfig.forEach((_, index) => {
+                const el = document.getElementById(`count-${index + 1}`);
+                if (el) el.innerText = '0';
+            });
+
             if (data) {
                 Object.keys(data).forEach(key => {
-                    activeOrders.push({ firebaseKey: key, ...data[key] });
+                    const item = { firebaseKey: key, ...data[key] };
+                    activeOrders.push(item);
+
+                    // Sync count to order card
+                    if (!item.isCustom && item.id) {
+                        const countEl = document.getElementById(`count-${item.id}`);
+                        if (countEl) countEl.innerText = item.qty;
+                    }
                 });
             }
             renderActiveList();
@@ -646,6 +602,7 @@
 
         function renderActiveList() {
             const container = document.getElementById('active-list');
+            if (!container) return;
             container.innerHTML = '';
 
             if (activeOrders.length === 0) {
@@ -742,10 +699,6 @@
             if (pass === "talabat1234") {
                 document.getElementById('password-screen').style.display = 'none';
                 document.getElementById('app-screen').style.display = 'block';
-                // Prompt for notification approval immediately upon landing inside app dashboard
-                if ("Notification" in window && Notification.permission === "default") {
-                    Notification.requestPermission();
-                }
             } else {
                 alert("Incorrect password!");
             }
@@ -757,7 +710,6 @@
             const navOrder = document.getElementById('nav-order');
             const navList = document.getElementById('nav-list');
             const title = document.getElementById('page-title');
-            const sendBtn = document.getElementById('header-send-btn');
             const customBtn = document.getElementById('header-custom-btn');
 
             if (tab === 'order') {
@@ -766,7 +718,6 @@
                 navOrder.classList.add('active');
                 navList.classList.remove('active');
                 title.innerText = "Order";
-                sendBtn.style.display = 'block';
                 customBtn.style.display = 'block';
             } else {
                 orderView.style.display = 'none';
@@ -774,15 +725,10 @@
                 navOrder.classList.remove('active');
                 navList.classList.add('active');
                 title.innerText = "List";
-                sendBtn.style.display = 'none';
                 customBtn.style.display = 'none';
                 renderActiveList();
             }
         };
-
-        document.getElementById('header-send-btn').addEventListener('click', sendOrder);
-        document.getElementById('header-custom-btn').addEventListener('click', addCustomItem);
-        document.getElementById('open-history-btn').addEventListener('click', openHistory);
     </script>
 </head>
 <body>
@@ -800,7 +746,6 @@
             <h1 id="page-title">Order</h1>
             <div class="header-actions">
                 <button class="custom-btn" id="header-custom-btn">Custom Items</button>
-                <button class="send-btn" id="header-send-btn">Send</button>
                 <button class="history-btn" id="open-history-btn">History</button>
             </div>
         </header>
