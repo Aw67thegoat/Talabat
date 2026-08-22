@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Order System</title>
+    <title>Order System - Multi-Account</title>
     <style>
         :root {
             --primary: #0076ff;
@@ -15,11 +15,10 @@
             --text: #2d3748;
             --text-muted: #718096;
             --border: #e2e8f0;
+            --danger: #e53e3e;
         }
 
-        * {
-            box-sizing: border-box;
-        }
+        * { box-sizing: border-box; }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -30,53 +29,59 @@
             padding-bottom: 80px;
         }
 
-        /* Password Screen */
-        #password-screen {
+        /* Auth Screen */
+        #auth-screen {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100vh;
-            background-color: var(--bg);
+            min-height: 100vh;
             padding: 20px;
         }
 
-        .login-card {
+        .auth-card {
             background: var(--card-bg);
-            padding: 40px 30px;
+            padding: 32px 24px;
             border-radius: 16px;
-            box-shadow: 0 10px 25px rgba(0, 118, 255, 0.05);
+            box-shadow: 0 10px 25px rgba(0, 118, 255, 0.08);
             text-align: center;
             width: 100%;
-            max-width: 360px;
+            max-width: 380px;
         }
 
-        .login-card h2 {
-            margin-top: 0;
-            margin-bottom: 24px;
-            color: var(--text);
-            font-size: 22px;
+        .auth-card h2 { margin-top: 0; margin-bottom: 20px; font-size: 22px; }
+
+        .form-group {
+            margin-bottom: 16px;
+            text-align: left;
         }
 
-        #password-input {
-            padding: 14px;
-            font-size: 16px;
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        .auth-input, .auth-select {
+            padding: 12px;
+            font-size: 15px;
             border: 2px solid var(--border);
             border-radius: 10px;
-            margin-bottom: 16px;
             width: 100%;
-            text-align: center;
             outline: none;
-            transition: border-color 0.2s;
+            background: white;
+            color: var(--text);
         }
 
-        #password-input:focus {
+        .auth-input:focus, .auth-select:focus {
             border-color: var(--primary);
         }
 
-        .login-btn {
-            padding: 14px;
-            font-size: 16px;
+        .auth-btn {
+            padding: 12px;
+            font-size: 15px;
             background-color: var(--primary);
             color: white;
             border: none;
@@ -84,22 +89,27 @@
             cursor: pointer;
             font-weight: 600;
             width: 100%;
-            transition: background-color 0.2s;
+            margin-top: 8px;
         }
 
-        .login-btn:hover {
-            background-color: var(--primary-hover);
+        .auth-btn:hover { background-color: var(--primary-hover); }
+
+        .toggle-link {
+            display: inline-block;
+            margin-top: 16px;
+            font-size: 14px;
+            color: var(--primary);
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: underline;
         }
 
-        /* Main App Layout */
-        #app-screen {
-            display: none;
-        }
+        /* Main App Screen */
+        #app-screen { display: none; }
 
         header {
             background-color: var(--card-bg);
             padding: 16px 20px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -109,59 +119,37 @@
             border-bottom: 1px solid var(--border);
         }
 
-        header h1 {
-            margin: 0;
-            font-size: 22px;
-            font-weight: 700;
-            color: var(--text);
-        }
-
-        .header-actions {
+        .header-title-group {
             display: flex;
-            gap: 10px;
-            align-items: center;
+            flex-direction: column;
         }
 
-        .custom-btn {
-            background-color: #718096;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            font-size: 14px;
-            font-weight: 600;
-            border-radius: 20px;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
+        header h1 { margin: 0; font-size: 20px; }
 
-        .custom-btn:hover {
-            background-color: #4a5568;
-        }
-
-        .history-btn {
-            background-color: var(--primary-light);
-            border: none;
+        .user-badge {
+            font-size: 12px;
             color: var(--primary);
-            padding: 8px 16px;
+            font-weight: 700;
+            margin-top: 2px;
+        }
+
+        .header-actions { display: flex; gap: 8px; align-items: center; }
+
+        .custom-btn, .history-btn, .logout-btn {
+            border: none;
+            padding: 8px 12px;
+            font-size: 13px;
+            font-weight: 600;
             border-radius: 20px;
             cursor: pointer;
-            font-weight: 600;
-            font-size: 14px;
-            transition: all 0.2s;
         }
 
-        .history-btn:hover {
-            background-color: var(--primary);
-            color: white;
-        }
+        .custom-btn { background-color: #718096; color: white; }
+        .history-btn { background-color: var(--primary-light); color: var(--primary); }
+        .logout-btn { background-color: #edf2f7; color: var(--danger); }
 
-        .container {
-            max-width: 600px;
-            margin: 20px auto;
-            padding: 0 16px;
-        }
+        .container { max-width: 600px; margin: 20px auto; padding: 0 16px; }
 
-        /* Order Grid */
         .grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -171,19 +159,12 @@
         .item-card {
             background: var(--card-bg);
             border-radius: 14px;
-            overflow: hidden;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
             display: flex;
             flex-direction: column;
             align-items: center;
             padding: 16px;
             text-align: center;
-            border: 1px solid transparent;
-            transition: border-color 0.2s;
-        }
-
-        .item-card:hover {
-            border-color: var(--border);
+            border: 1px solid var(--border);
         }
 
         .item-card img {
@@ -195,12 +176,7 @@
             background-color: #f7fafc;
         }
 
-        .item-name {
-            font-weight: 600;
-            font-size: 15px;
-            margin-bottom: 12px;
-            color: var(--text);
-        }
+        .item-name { font-weight: 600; font-size: 15px; margin-bottom: 12px; }
 
         .controls {
             display: flex;
@@ -221,26 +197,10 @@
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            color: var(--text);
-            transition: background-color 0.1s;
         }
 
-        .controls button:active {
-            background-color: var(--border);
-        }
+        .count { font-size: 15px; font-weight: 700; min-width: 20px; }
 
-        .count {
-            font-size: 15px;
-            font-weight: 700;
-            min-width: 20px;
-            color: var(--text);
-        }
-
-        /* List View */
         .list-item {
             background: var(--card-bg);
             padding: 14px;
@@ -249,28 +209,19 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
             border: 1px solid var(--border);
         }
 
-        .list-item-left {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-        }
+        .list-item-left { display: flex; align-items: center; gap: 14px; }
 
-        .list-item img {
+        .list-item img, .custom-placeholder {
             width: 54px;
             height: 54px;
-            object-fit: cover;
             border-radius: 8px;
-            background-color: #f7fafc;
+            object-fit: cover;
         }
 
         .custom-placeholder {
-            width: 54px;
-            height: 54px;
-            border-radius: 8px;
             background-color: #edf2f7;
             color: #718096;
             font-size: 11px;
@@ -278,19 +229,10 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            text-transform: uppercase;
             border: 1px dashed #cbd5e0;
         }
 
-        .list-item-info strong {
-            display: block;
-            font-size: 15px;
-            color: var(--text);
-            margin-bottom: 2px;
-        }
-
         .qty-badge {
-            display: inline-block;
             background-color: var(--primary-light);
             color: var(--primary);
             padding: 2px 8px;
@@ -308,12 +250,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.2s;
             background: white;
-        }
-
-        .circle-checkbox:hover {
-            border-color: var(--primary);
         }
 
         .circle-checkbox.checked {
@@ -321,31 +258,16 @@
             border-color: var(--success);
         }
 
-        .circle-checkbox.checked::after {
-            content: "✓";
-            color: white;
-            font-size: 14px;
-            font-weight: bold;
-        }
+        .circle-checkbox.checked::after { content: "✓"; color: white; font-weight: bold; }
 
-        .timestamp {
-            font-size: 12px;
-            color: var(--text-muted);
-            margin-top: 4px;
-        }
-
-        /* Bottom Navigation */
         nav {
             position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
+            bottom: 0; left: 0; right: 0;
             height: 65px;
             background-color: var(--card-bg);
             border-top: 1px solid var(--border);
             display: flex;
             z-index: 10;
-            box-shadow: 0 -4px 10px rgba(0,0,0,0.02);
         }
 
         .nav-btn {
@@ -356,24 +278,15 @@
             font-weight: 600;
             color: var(--text-muted);
             cursor: pointer;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            transition: color 0.2s;
         }
 
-        .nav-btn.active {
-            color: var(--primary);
-        }
+        .nav-btn.active { color: var(--primary); }
 
-        /* Modal styling */
         .modal {
             display: none;
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(26, 32, 44, 0.4);
-            backdrop-filter: blur(4px);
             z-index: 20;
             justify-content: center;
             align-items: center;
@@ -388,7 +301,6 @@
             max-width: 450px;
             max-height: 75vh;
             overflow-y: auto;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
         }
 
         .modal-header {
@@ -400,34 +312,87 @@
             padding-bottom: 12px;
         }
 
-        .modal-header h3 {
-            margin: 0;
-            font-size: 18px;
-            color: var(--text);
-        }
-
-        .close-modal {
-            background: none;
-            border: none;
-            font-size: 24px;
-            cursor: pointer;
-            color: var(--text-muted);
-            line-height: 1;
-        }
-
-        .empty-msg {
-            text-align: center;
-            color: var(--text-muted);
-            margin-top: 40px;
-            font-size: 15px;
-        }
+        .close-modal { background: none; border: none; font-size: 24px; cursor: pointer; }
+        .empty-msg { text-align: center; color: var(--text-muted); margin-top: 40px; }
     </style>
+</head>
+<body>
 
-    <!-- Firebase Configuration & Setup Module -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, set, push, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    <!-- Auth Screen -->
+    <div id="auth-screen">
+        <!-- Login Form -->
+        <div class="auth-card" id="login-box">
+            <h2>Select Account</h2>
+            <div class="form-group">
+                <label for="account-select">Account</label>
+                <select id="account-select" class="auth-select"></select>
+            </div>
+            <div class="form-group">
+                <label for="login-pass-input">Password</label>
+                <input type="password" id="login-pass-input" class="auth-input" placeholder="Enter password...">
+            </div>
+            <button class="auth-btn" id="login-btn">Log In</button>
+            <span class="toggle-link" id="go-to-create">Create New Account</span>
+        </div>
 
+        <!-- Create Account Form -->
+        <div class="auth-card" id="create-box" style="display: none;">
+            <h2>Create Account</h2>
+            <div class="form-group">
+                <label for="new-username-input">Account Name</label>
+                <input type="text" id="new-username-input" class="auth-input" placeholder="e.g. Home, Office, Kitchen">
+            </div>
+            <div class="form-group">
+                <label for="new-pass-input">Set Password</label>
+                <input type="password" id="new-pass-input" class="auth-input" placeholder="Create password...">
+            </div>
+            <button class="auth-btn" id="create-btn">Create & Login</button>
+            <span class="toggle-link" id="go-to-login">Back to Login</span>
+        </div>
+    </div>
+
+    <!-- Main App Screen -->
+    <div id="app-screen">
+        <header>
+            <div class="header-title-group">
+                <h1 id="page-title">Order</h1>
+                <span class="user-badge" id="current-user-display">Account: None</span>
+            </div>
+            <div class="header-actions">
+                <button class="custom-btn" id="header-custom-btn">Custom</button>
+                <button class="history-btn" id="open-history-btn">History</button>
+                <button class="logout-btn" id="logout-btn">Exit</button>
+            </div>
+        </header>
+
+        <div class="container">
+            <div id="order-view">
+                <div class="grid" id="items-grid"></div>
+            </div>
+
+            <div id="list-view" style="display: none;">
+                <div id="active-list"></div>
+            </div>
+        </div>
+
+        <nav>
+            <button class="nav-btn active" id="nav-order">1. Order</button>
+            <button class="nav-btn" id="nav-list">2. List</button>
+        </nav>
+    </div>
+
+    <!-- History Modal -->
+    <div id="history-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>History (Past 30 Mins)</h3>
+                <button class="close-modal" id="close-history-btn">&times;</button>
+            </div>
+            <div id="history-list"></div>
+        </div>
+    </div>
+
+    <script>
         const itemsConfig = [
             { name: "Tissues", img: "images (1).jpg" },
             { name: "Creme Caramel", img: "images (2).jpg" },
@@ -472,50 +437,66 @@
             { name: "Sugar", img: "31.png" }
         ];
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyBh8cPnt3MovP0vf1Qi3zU0LVcXYC3RNKA",
-            authDomain: "talabat-78707.firebaseapp.com",
-            databaseURL: "https://talabat-78707-default-rtdb.firebaseio.com/",
-            projectId: "talabat-78707",
-            storageBucket: "talabat-78707.firebasestorage.app",
-            messagingSenderId: "786538469018",
-            appId: "1:786538469018:web:bbce837d6453b0aa91b123"
+        let accounts = JSON.parse(localStorage.getItem('appAccounts')) || {
+            "Default": { password: "talabat1234", activeOrders: [], historyOrders: [] }
         };
 
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-
+        let currentAccountName = null;
         let activeOrders = [];
         let historyOrders = [];
 
-        function updateQuantityInFirebase(id, change, itemName, itemImg) {
-            const existingItem = activeOrders.find(item => item.id === id && !item.isCustom);
+        function saveAccountsToStorage() {
+            if (currentAccountName && accounts[currentAccountName]) {
+                accounts[currentAccountName].activeOrders = activeOrders;
+                accounts[currentAccountName].historyOrders = historyOrders;
+            }
+            localStorage.setItem('appAccounts', JSON.stringify(accounts));
+        }
+
+        function loadAccountData(accountName) {
+            currentAccountName = accountName;
+            activeOrders = accounts[accountName].activeOrders || [];
+            historyOrders = accounts[accountName].historyOrders || [];
+            document.getElementById('current-user-display').innerText = `Account: ${accountName}`;
+            updateGridCounts();
+            renderActiveList();
+        }
+
+        function updateAccountDropdown() {
+            const select = document.getElementById('account-select');
+            select.innerHTML = '';
+            Object.keys(accounts).forEach(accName => {
+                const opt = document.createElement('option');
+                opt.value = accName;
+                opt.innerText = accName;
+                select.appendChild(opt);
+            });
+        }
+
+        function updateQuantity(id, change, itemName, itemImg) {
+            let existingItem = activeOrders.find(item => item.id === id && !item.isCustom);
 
             if (existingItem) {
-                const newQty = existingItem.qty + change;
-                if (newQty <= 0) {
-                    set(ref(db, `orders/active/${existingItem.firebaseKey}`), null);
-                } else {
-                    set(ref(db, `orders/active/${existingItem.firebaseKey}`), {
-                        ...existingItem,
-                        qty: newQty,
-                        timestamp: new Date().getTime()
-                    });
+                existingItem.qty += change;
+                if (existingItem.qty <= 0) {
+                    activeOrders = activeOrders.filter(item => item !== existingItem);
                 }
             } else if (change > 0) {
-                const activeRef = ref(db, 'orders/active');
-                push(activeRef, {
+                activeOrders.push({
                     id: id,
                     name: itemName,
                     img: itemImg,
-                    qty: 1, 
+                    qty: 1,
                     isCustom: false,
-                    timestamp: new Date().getTime()
+                    key: "item_" + Date.now()
                 });
             }
+            saveAccountsToStorage();
+            updateGridCounts();
+            renderActiveList();
         }
 
-        window.addCustomItem = function() {
+        function addCustomItem() {
             const customName = prompt("Enter custom item name:");
             if (!customName || customName.trim() === "") return;
 
@@ -526,93 +507,25 @@
                 return;
             }
 
-            const activeRef = ref(db, 'orders/active');
-            push(activeRef, {
+            activeOrders.push({
                 id: "custom_" + Date.now(),
                 name: customName.trim(),
                 qty: customQty,
                 isCustom: true,
-                timestamp: new Date().getTime()
+                key: "custom_" + Date.now()
             });
-        };
+            saveAccountsToStorage();
+            renderActiveList();
+        }
 
-        window.checkPassword = function() {
-            const pass = document.getElementById('password-input').value;
-            if (pass === "talabat1234") {
-                document.getElementById('password-screen').style.display = 'none';
-                document.getElementById('app-screen').style.display = 'block';
-            } else {
-                alert("Incorrect password!");
-            }
-        };
-
-        window.switchTab = function(tab) {
-            const orderView = document.getElementById('order-view');
-            const listView = document.getElementById('list-view');
-            const navOrder = document.getElementById('nav-order');
-            const navList = document.getElementById('nav-list');
-            const title = document.getElementById('page-title');
-            const customBtn = document.getElementById('header-custom-btn');
-
-            if (tab === 'order') {
-                orderView.style.display = 'block';
-                listView.style.display = 'none';
-                navOrder.classList.add('active');
-                navList.classList.remove('active');
-                title.innerText = "Order";
-                customBtn.style.display = 'block';
-            } else {
-                orderView.style.display = 'none';
-                listView.style.display = 'block';
-                navOrder.classList.remove('active');
-                navList.classList.add('active');
-                title.innerText = "List";
-                customBtn.style.display = 'none';
-                renderActiveList();
-            }
-        };
-
-        window.openHistory = function() {
-            const now = new Date().getTime();
-            const modal = document.getElementById('history-modal');
-            const historyList = document.getElementById('history-list');
-            modal.style.display = 'flex';
-            historyList.innerHTML = '';
-
-            const validHistory = historyOrders.filter(item => {
-                const diffInMinutes = (now - item.completedAt) / 1000 / 60;
-                if (diffInMinutes > 30) {
-                    set(ref(db, `orders/history/${item.firebaseKey}`), null);
-                    return false;
-                }
-                return true;
+        function updateGridCounts() {
+            itemsConfig.forEach((_, index) => {
+                const id = index + 1;
+                const countEl = document.getElementById(`count-${id}`);
+                const match = activeOrders.find(item => item.id === id && !item.isCustom);
+                if (countEl) countEl.innerText = match ? match.qty : '0';
             });
-
-            if (validHistory.length === 0) {
-                historyList.innerHTML = '<div class="empty-msg">No history records in the last 30 minutes.</div>';
-                return;
-            }
-
-            for (let i = validHistory.length - 1; i >= 0; i--) {
-                const item = validHistory[i];
-                const timeString = new Date(item.completedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                
-                const row = document.createElement('div');
-                row.className = 'list-item';
-                row.innerHTML = `
-                    <div class="list-item-left">
-                        <img src="${item.img || (item.id + '.png')}" onerror="this.src='https://via.placeholder.com/150/e6f2ff/0076ff?text=${item.id}'">
-                        <div class="list-item-info">
-                            <strong>${item.name}</strong>
-                            <span class="qty-badge" style="background-color: #e6fcf5; color: var(--success);">x${item.qty}</span>
-                            <div class="timestamp">Checked at: ${timeString}</div>
-                        </div>
-                    </div>
-                    <div class="circle-checkbox checked" style="pointer-events: none;"></div>
-                `;
-                historyList.appendChild(row);
-            }
-        };
+        }
 
         function renderActiveList() {
             const container = document.getElementById('active-list');
@@ -628,7 +541,7 @@
                 const row = document.createElement('div');
                 row.className = 'list-item';
 
-                let mediaElement = `<img src="${item.img || (item.id + '.png')}" onerror="this.src='https://via.placeholder.com/150/e6f2ff/0076ff?text=${item.id}'">`;
+                let mediaElement = `<img src="${item.img}" onerror="this.src='https://via.placeholder.com/150/e6f2ff/0076ff?text=${item.id}'">`;
                 if (item.isCustom) {
                     mediaElement = `<div class="custom-placeholder">Custom</div>`;
                 }
@@ -636,37 +549,69 @@
                 row.innerHTML = `
                     <div class="list-item-left">
                         ${mediaElement}
-                        <div class="list-item-info">
+                        <div>
                             <strong>${item.name}</strong>
                             <span class="qty-badge">x${item.qty}</span>
                         </div>
                     </div>
-                    <div class="circle-checkbox" id="check-${item.firebaseKey}"></div>
+                    <div class="circle-checkbox" id="check-${item.key}"></div>
                 `;
                 container.appendChild(row);
 
-                row.querySelector(`#check-${item.firebaseKey}`).addEventListener('click', (e) => {
+                row.querySelector(`#check-${item.key}`).addEventListener('click', (e) => {
                     e.target.classList.add('checked');
-                    setTimeout(() => checkOffItem(item), 400);
+                    setTimeout(() => {
+                        activeOrders = activeOrders.filter(i => i.key !== item.key);
+                        if (!item.isCustom) {
+                            historyOrders.push({
+                                ...item,
+                                completedAt: new Date().getTime()
+                            });
+                        }
+                        saveAccountsToStorage();
+                        updateGridCounts();
+                        renderActiveList();
+                    }, 400);
                 });
             });
         }
 
-        function checkOffItem(item) {
-            set(ref(db, `orders/active/${item.firebaseKey}`), null);
-            if (!item.isCustom) {
-                const historyRef = ref(db, 'orders/history');
-                push(historyRef, {
-                    id: item.id,
-                    name: item.name,
-                    img: item.img || '',
-                    qty: item.qty,
-                    completedAt: new Date().getTime()
-                });
+        function openHistory() {
+            const now = new Date().getTime();
+            const modal = document.getElementById('history-modal');
+            const historyList = document.getElementById('history-list');
+            modal.style.display = 'flex';
+            historyList.innerHTML = '';
+
+            historyOrders = historyOrders.filter(item => ((now - item.completedAt) / 1000 / 60) <= 30);
+            saveAccountsToStorage();
+
+            if (historyOrders.length === 0) {
+                historyList.innerHTML = '<div class="empty-msg">No history records in the last 30 minutes.</div>';
+                return;
+            }
+
+            for (let i = historyOrders.length - 1; i >= 0; i--) {
+                const item = historyOrders[i];
+                const timeString = new Date(item.completedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                
+                const row = document.createElement('div');
+                row.className = 'list-item';
+                row.innerHTML = `
+                    <div class="list-item-left">
+                        <img src="${item.img}" onerror="this.src='https://via.placeholder.com/150/e6f2ff/0076ff?text=${item.id}'">
+                        <div>
+                            <strong>${item.name}</strong>
+                            <span class="qty-badge" style="background-color: #e6fcf5; color: var(--success);">x${item.qty}</span>
+                            <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Checked at: ${timeString}</div>
+                        </div>
+                    </div>
+                    <div class="circle-checkbox checked" style="pointer-events: none;"></div>
+                `;
+                historyList.appendChild(row);
             }
         }
 
-        // Initialize DOM Elements and Event Handlers
         document.addEventListener("DOMContentLoaded", () => {
             const grid = document.getElementById('items-grid');
             itemsConfig.forEach((item, index) => {
@@ -684,106 +629,112 @@
                 `;
                 grid.appendChild(card);
 
-                card.querySelector(`#minus-${id}`).addEventListener('click', () => updateQuantityInFirebase(id, -1, item.name, item.img));
-                card.querySelector(`#plus-${id}`).addEventListener('click', () => updateQuantityInFirebase(id, 1, item.name, item.img));
+                card.querySelector(`#minus-${id}`).addEventListener('click', () => updateQuantity(id, -1, item.name, item.img));
+                card.querySelector(`#plus-${id}`).addEventListener('click', () => updateQuantity(id, 1, item.name, item.img));
             });
 
-            document.getElementById('header-custom-btn').addEventListener('click', () => window.addCustomItem());
-            document.getElementById('open-history-btn').addEventListener('click', () => window.openHistory());
-            
-            // Password keypress enter
-            document.getElementById('password-input').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') window.checkPassword();
-            });
-        });
+            updateAccountDropdown();
 
-        // Realtime Firebase Listeners
-        onValue(ref(db, 'orders/active'), (snapshot) => {
-            activeOrders = [];
-            const data = snapshot.val();
-            
-            itemsConfig.forEach((_, index) => {
-                const el = document.getElementById(`count-${index + 1}`);
-                if (el) el.innerText = '0';
+            // Toggle screens inside auth
+            document.getElementById('go-to-create').addEventListener('click', () => {
+                document.getElementById('login-box').style.display = 'none';
+                document.getElementById('create-box').style.display = 'block';
             });
 
-            if (data) {
-                Object.keys(data).forEach(key => {
-                    const item = { firebaseKey: key, ...data[key] };
-                    activeOrders.push(item);
+            document.getElementById('go-to-login').addEventListener('click', () => {
+                document.getElementById('create-box').style.display = 'none';
+                document.getElementById('login-box').style.display = 'block';
+            });
 
-                    if (!item.isCustom && item.id) {
-                        const countEl = document.getElementById(`count-${item.id}`);
-                        if (countEl) countEl.innerText = item.qty;
-                    }
-                });
-            }
-            renderActiveList();
+            // Login handle
+            document.getElementById('login-btn').addEventListener('click', () => {
+                const selectedAcc = document.getElementById('account-select').value;
+                const passInput = document.getElementById('login-pass-input').value;
+
+                if (!selectedAcc || !accounts[selectedAcc]) {
+                    alert("Please select or create an account.");
+                    return;
+                }
+
+                if (passInput === accounts[selectedAcc].password) {
+                    loadAccountData(selectedAcc);
+                    document.getElementById('auth-screen').style.display = 'none';
+                    document.getElementById('app-screen').style.display = 'block';
+                    document.getElementById('login-pass-input').value = '';
+                } else {
+                    alert("Incorrect password!");
+                }
+            });
+
+            // Account Creation handle
+            document.getElementById('create-btn').addEventListener('click', () => {
+                const nameInput = document.getElementById('new-username-input').value.trim();
+                const passInput = document.getElementById('new-pass-input').value;
+
+                if (!nameInput || !passInput) {
+                    alert("Please fill in both Account Name and Password.");
+                    return;
+                }
+
+                if (accounts[nameInput]) {
+                    alert("An account with this name already exists.");
+                    return;
+                }
+
+                accounts[nameInput] = {
+                    password: passInput,
+                    activeOrders: [],
+                    historyOrders: []
+                };
+
+                saveAccountsToStorage();
+                updateAccountDropdown();
+                document.getElementById('account-select').value = nameInput;
+
+                // Auto-login newly created account
+                loadAccountData(nameInput);
+                document.getElementById('auth-screen').style.display = 'none';
+                document.getElementById('app-screen').style.display = 'block';
+                
+                document.getElementById('new-username-input').value = '';
+                document.getElementById('new-pass-input').value = '';
+                document.getElementById('create-box').style.display = 'none';
+                document.getElementById('login-box').style.display = 'block';
+            });
+
+            // Logout
+            document.getElementById('logout-btn').addEventListener('click', () => {
+                saveAccountsToStorage();
+                currentAccountName = null;
+                document.getElementById('app-screen').style.display = 'none';
+                document.getElementById('auth-screen').style.display = 'flex';
+            });
+
+            document.getElementById('header-custom-btn').addEventListener('click', addCustomItem);
+            document.getElementById('open-history-btn').addEventListener('click', openHistory);
+            document.getElementById('close-history-btn').addEventListener('click', () => {
+                document.getElementById('history-modal').style.display = 'none';
+            });
+
+            document.getElementById('nav-order').addEventListener('click', () => {
+                document.getElementById('order-view').style.display = 'block';
+                document.getElementById('list-view').style.display = 'none';
+                document.getElementById('nav-order').classList.add('active');
+                document.getElementById('nav-list').classList.remove('active');
+                document.getElementById('page-title').innerText = "Order";
+                document.getElementById('header-custom-btn').style.display = 'block';
+            });
+
+            document.getElementById('nav-list').addEventListener('click', () => {
+                document.getElementById('order-view').style.display = 'none';
+                document.getElementById('list-view').style.display = 'block';
+                document.getElementById('nav-order').classList.remove('active');
+                document.getElementById('nav-list').classList.add('active');
+                document.getElementById('page-title').innerText = "List";
+                document.getElementById('header-custom-btn').style.display = 'none';
+                renderActiveList();
+            });
         });
-
-        onValue(ref(db, 'orders/history'), (snapshot) => {
-            historyOrders = [];
-            const data = snapshot.val();
-            if (data) {
-                Object.keys(data).forEach(key => {
-                    historyOrders.push({ firebaseKey: key, ...data[key] });
-                });
-            }
-        });
-    </script>
-</head>
-<body>
-
-    <div id="password-screen">
-        <div class="login-card">
-            <h2>Enter Secret Password</h2>
-            <input type="password" id="password-input" placeholder="Password...">
-            <button class="login-btn" onclick="checkPassword()">Submit</button>
-        </div>
-    </div>
-
-    <div id="app-screen">
-        <header>
-            <h1 id="page-title">Order</h1>
-            <div class="header-actions">
-                <button class="custom-btn" id="header-custom-btn">Custom Items</button>
-                <button class="history-btn" id="open-history-btn">History</button>
-            </div>
-        </header>
-
-        <div class="container">
-            <div id="order-view">
-                <div class="grid" id="items-grid"></div>
-            </div>
-
-            <div id="list-view" style="display: none;">
-                <div id="active-list"></div>
-            </div>
-        </div>
-
-        <nav>
-            <button class="nav-btn active" id="nav-order" onclick="switchTab('order')">1. Order</button>
-            <button class="nav-btn" id="nav-list" onclick="switchTab('list')">2. List</button>
-        </nav>
-    </div>
-
-    <div id="history-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>History (Past 30 Mins)</h3>
-                <button class="close-modal" onclick="document.getElementById('history-modal').style.display = 'none'">&times;</button>
-            </div>
-            <div id="history-list"></div>
-        </div>
-    </div>
-
-    <script>
-        window.onclick = function(event) {
-            const modal = document.getElementById('history-modal');
-            if (event.target == modal) {
-                modal.style.display = "none";
-            }
-        }
     </script>
 </body>
 </html>
