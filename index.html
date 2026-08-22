@@ -16,6 +16,7 @@
             --text-muted: #718096;
             --border: #e2e8f0;
             --danger: #e53e3e;
+            --danger-hover: #c53030;
         }
 
         * { box-sizing: border-box; }
@@ -64,7 +65,7 @@
             margin-bottom: 6px;
         }
 
-        .auth-input, .auth-select {
+        .auth-input {
             padding: 12px;
             font-size: 15px;
             border: 2px solid var(--border);
@@ -75,7 +76,7 @@
             color: var(--text);
         }
 
-        .auth-input:focus, .auth-select:focus {
+        .auth-input:focus {
             border-color: var(--primary);
         }
 
@@ -135,7 +136,7 @@
 
         .header-actions { display: flex; gap: 8px; align-items: center; }
 
-        .custom-btn, .history-btn, .logout-btn {
+        .custom-btn, .history-btn, .settings-btn, .logout-btn {
             border: none;
             padding: 8px 12px;
             font-size: 13px;
@@ -146,6 +147,7 @@
 
         .custom-btn { background-color: #718096; color: white; }
         .history-btn { background-color: var(--primary-light); color: var(--primary); }
+        .settings-btn { background-color: #edf2f7; color: var(--text); }
         .logout-btn { background-color: #edf2f7; color: var(--danger); }
 
         .container { max-width: 600px; margin: 20px auto; padding: 0 16px; }
@@ -314,6 +316,20 @@
 
         .close-modal { background: none; border: none; font-size: 24px; cursor: pointer; }
         .empty-msg { text-align: center; color: var(--text-muted); margin-top: 40px; }
+        
+        .danger-btn {
+            background-color: var(--danger);
+            color: white;
+            border: none;
+            padding: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            border-radius: 10px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 12px;
+        }
+        .danger-btn:hover { background-color: var(--danger-hover); }
     </style>
 </head>
 <body>
@@ -322,10 +338,10 @@
     <div id="auth-screen">
         <!-- Login Form -->
         <div class="auth-card" id="login-box">
-            <h2>Select Account</h2>
+            <h2>Account Login</h2>
             <div class="form-group">
-                <label for="account-select">Account</label>
-                <select id="account-select" class="auth-select"></select>
+                <label for="login-username-input">Account Name</label>
+                <input type="text" id="login-username-input" class="auth-input" placeholder="Enter account name...">
             </div>
             <div class="form-group">
                 <label for="login-pass-input">Password</label>
@@ -361,6 +377,7 @@
             <div class="header-actions">
                 <button class="custom-btn" id="header-custom-btn">Custom</button>
                 <button class="history-btn" id="open-history-btn">History</button>
+                <button class="settings-btn" id="open-settings-btn">Settings</button>
                 <button class="logout-btn" id="logout-btn">Exit</button>
             </div>
         </header>
@@ -392,7 +409,48 @@
         </div>
     </div>
 
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Account Settings</h3>
+                <button class="close-modal" id="close-settings-btn">&times;</button>
+            </div>
+            <div class="form-group">
+                <label for="edit-username-input">Update Account Name</label>
+                <input type="text" id="edit-username-input" class="auth-input" placeholder="New account name">
+                <button class="auth-btn" id="save-username-btn">Update Name</button>
+            </div>
+            <hr style="border: 0; border-top: 1px solid var(--border); margin: 20px 0;">
+            <div class="form-group">
+                <label for="edit-password-input">Update Password</label>
+                <input type="password" id="edit-password-input" class="auth-input" placeholder="New password">
+                <button class="auth-btn" id="save-password-btn">Update Password</button>
+            </div>
+            <hr style="border: 0; border-top: 1px solid var(--border); margin: 20px 0;">
+            <button class="danger-btn" id="delete-account-btn">Delete Account</button>
+        </div>
+    </div>
+
+    <!-- Firebase App & Firestore SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
     <script>
+        // --- Firebase Configuration ---
+        // TODO: Replace with your actual Firebase project config credentials
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
         const itemsConfig = [
             { name: "Tissues", img: "images (1).jpg" },
             { name: "Creme Caramel", img: "images (2).jpg" },
@@ -437,40 +495,29 @@
             { name: "Sugar", img: "31.png" }
         ];
 
-        let accounts = JSON.parse(localStorage.getItem('appAccounts')) || {
-            "Default": { password: "talabat1234", activeOrders: [], historyOrders: [] }
-        };
-
         let currentAccountName = null;
         let activeOrders = [];
         let historyOrders = [];
 
-        function saveAccountsToStorage() {
-            if (currentAccountName && accounts[currentAccountName]) {
-                accounts[currentAccountName].activeOrders = activeOrders;
-                accounts[currentAccountName].historyOrders = historyOrders;
+        async function saveAccountToFirebase() {
+            if (!currentAccountName) return;
+            try {
+                await db.collection("accounts").doc(currentAccountName).set({
+                    activeOrders: activeOrders,
+                    historyOrders: historyOrders
+                }, { merge: true });
+            } catch (err) {
+                console.error("Firebase save error: ", err);
             }
-            localStorage.setItem('appAccounts', JSON.stringify(accounts));
         }
 
-        function loadAccountData(accountName) {
+        function loadAccountData(accountName, data) {
             currentAccountName = accountName;
-            activeOrders = accounts[accountName].activeOrders || [];
-            historyOrders = accounts[accountName].historyOrders || [];
+            activeOrders = data.activeOrders || [];
+            historyOrders = data.historyOrders || [];
             document.getElementById('current-user-display').innerText = `Account: ${accountName}`;
             updateGridCounts();
             renderActiveList();
-        }
-
-        function updateAccountDropdown() {
-            const select = document.getElementById('account-select');
-            select.innerHTML = '';
-            Object.keys(accounts).forEach(accName => {
-                const opt = document.createElement('option');
-                opt.value = accName;
-                opt.innerText = accName;
-                select.appendChild(opt);
-            });
         }
 
         function updateQuantity(id, change, itemName, itemImg) {
@@ -488,10 +535,10 @@
                     img: itemImg,
                     qty: 1,
                     isCustom: false,
-                    key: "item_" + Date.now()
+                    key: "item_" + Date.now() + "_" + Math.random().toString(36).substr(2, 4)
                 });
             }
-            saveAccountsToStorage();
+            saveAccountToFirebase();
             updateGridCounts();
             renderActiveList();
         }
@@ -512,9 +559,10 @@
                 name: customName.trim(),
                 qty: customQty,
                 isCustom: true,
-                key: "custom_" + Date.now()
+                img: "",
+                key: "custom_" + Date.now() + "_" + Math.random().toString(36).substr(2, 4)
             });
-            saveAccountsToStorage();
+            saveAccountToFirebase();
             renderActiveList();
         }
 
@@ -562,13 +610,11 @@
                     e.target.classList.add('checked');
                     setTimeout(() => {
                         activeOrders = activeOrders.filter(i => i.key !== item.key);
-                        if (!item.isCustom) {
-                            historyOrders.push({
-                                ...item,
-                                completedAt: new Date().getTime()
-                            });
-                        }
-                        saveAccountsToStorage();
+                        historyOrders.push({
+                            ...item,
+                            completedAt: new Date().getTime()
+                        });
+                        saveAccountToFirebase();
                         updateGridCounts();
                         renderActiveList();
                     }, 400);
@@ -584,7 +630,7 @@
             historyList.innerHTML = '';
 
             historyOrders = historyOrders.filter(item => ((now - item.completedAt) / 1000 / 60) <= 30);
-            saveAccountsToStorage();
+            saveAccountToFirebase();
 
             if (historyOrders.length === 0) {
                 historyList.innerHTML = '<div class="empty-msg">No history records in the last 30 minutes.</div>';
@@ -595,11 +641,16 @@
                 const item = historyOrders[i];
                 const timeString = new Date(item.completedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
                 
+                let mediaElement = `<img src="${item.img}" onerror="this.src='https://via.placeholder.com/150/e6f2ff/0076ff?text=${item.id}'">`;
+                if (item.isCustom) {
+                    mediaElement = `<div class="custom-placeholder">Custom</div>`;
+                }
+
                 const row = document.createElement('div');
                 row.className = 'list-item';
                 row.innerHTML = `
                     <div class="list-item-left">
-                        <img src="${item.img}" onerror="this.src='https://via.placeholder.com/150/e6f2ff/0076ff?text=${item.id}'">
+                        ${mediaElement}
                         <div>
                             <strong>${item.name}</strong>
                             <span class="qty-badge" style="background-color: #e6fcf5; color: var(--success);">x${item.qty}</span>
@@ -633,9 +684,7 @@
                 card.querySelector(`#plus-${id}`).addEventListener('click', () => updateQuantity(id, 1, item.name, item.img));
             });
 
-            updateAccountDropdown();
-
-            // Toggle screens inside auth
+            // Navigation Toggle
             document.getElementById('go-to-create').addEventListener('click', () => {
                 document.getElementById('login-box').style.display = 'none';
                 document.getElementById('create-box').style.display = 'block';
@@ -646,28 +695,40 @@
                 document.getElementById('login-box').style.display = 'block';
             });
 
-            // Login handle
-            document.getElementById('login-btn').addEventListener('click', () => {
-                const selectedAcc = document.getElementById('account-select').value;
+            // Firebase Login handle
+            document.getElementById('login-btn').addEventListener('click', async () => {
+                const username = document.getElementById('login-username-input').value.trim();
                 const passInput = document.getElementById('login-pass-input').value;
 
-                if (!selectedAcc || !accounts[selectedAcc]) {
-                    alert("Please select or create an account.");
+                if (!username || !passInput) {
+                    alert("Please enter both Account Name and Password.");
                     return;
                 }
 
-                if (passInput === accounts[selectedAcc].password) {
-                    loadAccountData(selectedAcc);
-                    document.getElementById('auth-screen').style.display = 'none';
-                    document.getElementById('app-screen').style.display = 'block';
-                    document.getElementById('login-pass-input').value = '';
-                } else {
-                    alert("Incorrect password!");
+                try {
+                    const doc = await db.collection("accounts").doc(username).get();
+                    if (!doc.exists) {
+                        alert("Account not found!");
+                        return;
+                    }
+
+                    const accountData = doc.data();
+                    if (accountData.password === passInput) {
+                        loadAccountData(username, accountData);
+                        document.getElementById('auth-screen').style.display = 'none';
+                        document.getElementById('app-screen').style.display = 'block';
+                        document.getElementById('login-username-input').value = '';
+                        document.getElementById('login-pass-input').value = '';
+                    } else {
+                        alert("Incorrect password!");
+                    }
+                } catch (err) {
+                    alert("Error logging in: " + err.message);
                 }
             });
 
-            // Account Creation handle
-            document.getElementById('create-btn').addEventListener('click', () => {
+            // Firebase Account Creation handle
+            document.getElementById('create-btn').addEventListener('click', async () => {
                 const nameInput = document.getElementById('new-username-input').value.trim();
                 const passInput = document.getElementById('new-pass-input').value;
 
@@ -676,46 +737,114 @@
                     return;
                 }
 
-                if (accounts[nameInput]) {
-                    alert("An account with this name already exists.");
-                    return;
+                try {
+                    const doc = await db.collection("accounts").doc(nameInput).get();
+                    if (doc.exists) {
+                        alert("An account with this name already exists.");
+                        return;
+                    }
+
+                    const newAccData = {
+                        password: passInput,
+                        activeOrders: [],
+                        historyOrders: []
+                    };
+
+                    await db.collection("accounts").doc(nameInput).set(newAccData);
+
+                    loadAccountData(nameInput, newAccData);
+                    document.getElementById('auth-screen').style.display = 'none';
+                    document.getElementById('app-screen').style.display = 'block';
+                    
+                    document.getElementById('new-username-input').value = '';
+                    document.getElementById('new-pass-input').value = '';
+                    document.getElementById('create-box').style.display = 'none';
+                    document.getElementById('login-box').style.display = 'block';
+                } catch (err) {
+                    alert("Error creating account: " + err.message);
                 }
-
-                accounts[nameInput] = {
-                    password: passInput,
-                    activeOrders: [],
-                    historyOrders: []
-                };
-
-                saveAccountsToStorage();
-                updateAccountDropdown();
-                document.getElementById('account-select').value = nameInput;
-
-                // Auto-login newly created account
-                loadAccountData(nameInput);
-                document.getElementById('auth-screen').style.display = 'none';
-                document.getElementById('app-screen').style.display = 'block';
-                
-                document.getElementById('new-username-input').value = '';
-                document.getElementById('new-pass-input').value = '';
-                document.getElementById('create-box').style.display = 'none';
-                document.getElementById('login-box').style.display = 'block';
             });
 
-            // Logout
-            document.getElementById('logout-btn').addEventListener('click', () => {
-                saveAccountsToStorage();
+            // Account Settings Controls
+            document.getElementById('save-username-btn').addEventListener('click', async () => {
+                const newName = document.getElementById('edit-username-input').value.trim();
+                if (!newName || newName === currentAccountName) return;
+
+                try {
+                    const checkDoc = await db.collection("accounts").doc(newName).get();
+                    if (checkDoc.exists) {
+                        alert("An account with this name already exists.");
+                        return;
+                    }
+
+                    const oldDoc = await db.collection("accounts").doc(currentAccountName).get();
+                    const data = oldDoc.data();
+
+                    await db.collection("accounts").doc(newName).set(data);
+                    await db.collection("accounts").doc(currentAccountName).delete();
+
+                    currentAccountName = newName;
+                    document.getElementById('current-user-display').innerText = `Account: ${newName}`;
+                    document.getElementById('edit-username-input').value = '';
+                    document.getElementById('settings-modal').style.display = 'none';
+                    alert("Account name updated successfully!");
+                } catch (err) {
+                    alert("Error updating account name: " + err.message);
+                }
+            });
+
+            document.getElementById('save-password-btn').addEventListener('click', async () => {
+                const newPass = document.getElementById('edit-password-input').value;
+                if (!newPass) return;
+
+                try {
+                    await db.collection("accounts").doc(currentAccountName).update({ password: newPass });
+                    document.getElementById('edit-password-input').value = '';
+                    document.getElementById('settings-modal').style.display = 'none';
+                    alert("Password updated successfully!");
+                } catch (err) {
+                    alert("Error updating password: " + err.message);
+                }
+            });
+
+            document.getElementById('delete-account-btn').addEventListener('click', async () => {
+                if (!confirm(`Are you sure you want to delete account "${currentAccountName}"? This action cannot be undone.`)) return;
+
+                try {
+                    await db.collection("accounts").doc(currentAccountName).delete();
+                    currentAccountName = null;
+                    document.getElementById('settings-modal').style.display = 'none';
+                    document.getElementById('app-screen').style.display = 'none';
+                    document.getElementById('auth-screen').style.display = 'flex';
+                    alert("Account deleted.");
+                } catch (err) {
+                    alert("Error deleting account: " + err.message);
+                }
+            });
+
+            // Logout handle
+            document.getElementById('logout-btn').addEventListener('click', async () => {
+                await saveAccountToFirebase();
                 currentAccountName = null;
                 document.getElementById('app-screen').style.display = 'none';
                 document.getElementById('auth-screen').style.display = 'flex';
             });
 
+            // Modals Controls
             document.getElementById('header-custom-btn').addEventListener('click', addCustomItem);
             document.getElementById('open-history-btn').addEventListener('click', openHistory);
             document.getElementById('close-history-btn').addEventListener('click', () => {
                 document.getElementById('history-modal').style.display = 'none';
             });
 
+            document.getElementById('open-settings-btn').addEventListener('click', () => {
+                document.getElementById('settings-modal').style.display = 'flex';
+            });
+            document.getElementById('close-settings-btn').addEventListener('click', () => {
+                document.getElementById('settings-modal').style.display = 'none';
+            });
+
+            // Nav Tabs Switcher
             document.getElementById('nav-order').addEventListener('click', () => {
                 document.getElementById('order-view').style.display = 'block';
                 document.getElementById('list-view').style.display = 'none';
