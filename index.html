@@ -17,6 +17,7 @@
             --border: #e2e8f0;
             --danger: #e53e3e;
             --danger-hover: #c53030;
+            --admin-color: #8e44ad;
         }
 
         * { box-sizing: border-box; }
@@ -134,9 +135,19 @@
             margin-top: 2px;
         }
 
-        .header-actions { display: flex; gap: 8px; align-items: center; }
+        .admin-badge {
+            font-size: 11px;
+            background-color: var(--admin-color);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 6px;
+            display: none;
+        }
 
-        .custom-btn, .history-btn, .settings-btn, .logout-btn {
+        .header-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+        .custom-btn, .history-btn, .settings-btn, .logout-btn, .admin-btn {
             border: none;
             padding: 8px 12px;
             font-size: 13px;
@@ -148,6 +159,7 @@
         .custom-btn { background-color: #718096; color: white; }
         .history-btn { background-color: var(--primary-light); color: var(--primary); }
         .settings-btn { background-color: #edf2f7; color: var(--text); }
+        .admin-btn { background-color: #f3e5f5; color: var(--admin-color); }
         .logout-btn { background-color: #edf2f7; color: var(--danger); }
 
         .container { max-width: 600px; margin: 20px auto; padding: 0 16px; }
@@ -167,6 +179,7 @@
             padding: 16px;
             text-align: center;
             border: 1px solid var(--border);
+            position: relative;
         }
 
         .item-card img {
@@ -202,6 +215,26 @@
         }
 
         .count { font-size: 15px; font-weight: 700; min-width: 20px; }
+
+        .admin-controls {
+            display: none;
+            gap: 6px;
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        .admin-edit-btn, .admin-delete-btn {
+            flex: 1;
+            padding: 6px;
+            font-size: 12px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .admin-edit-btn { background-color: #e2e8f0; color: #2d3748; }
+        .admin-delete-btn { background-color: #fed7d7; color: var(--danger); }
 
         .list-item {
             background: var(--card-bg);
@@ -372,10 +405,14 @@
         <header>
             <div class="header-title-group">
                 <h1 id="page-title">Order</h1>
-                <span class="user-badge" id="current-user-display">Account: None</span>
+                <div>
+                    <span class="user-badge" id="current-user-display">Account: None</span>
+                    <span class="admin-badge" id="admin-badge-indicator">ADMIN</span>
+                </div>
             </div>
             <div class="header-actions">
                 <button class="custom-btn" id="header-custom-btn">Custom</button>
+                <button class="admin-btn" id="admin-action-btn">Admin</button>
                 <button class="history-btn" id="open-history-btn">History</button>
                 <button class="settings-btn" id="open-settings-btn">Settings</button>
                 <button class="logout-btn" id="logout-btn">Exit</button>
@@ -432,6 +469,25 @@
         </div>
     </div>
 
+    <!-- Admin Add/Edit Item Modal -->
+    <div id="admin-item-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="admin-modal-title">Add Item to Catalog</h3>
+                <button class="close-modal" id="close-admin-item-btn">&times;</button>
+            </div>
+            <div class="form-group">
+                <label for="admin-item-name">Item Name</label>
+                <input type="text" id="admin-item-name" class="auth-input" placeholder="e.g. Fresh Milk">
+            </div>
+            <div class="form-group">
+                <label for="admin-item-file">Upload Image File</label>
+                <input type="file" id="admin-item-file" accept="image/*" class="auth-input">
+            </div>
+            <button class="auth-btn" id="save-admin-item-btn">Save Item</button>
+        </div>
+    </div>
+
     <!-- Firebase App & Firestore SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
@@ -452,53 +508,69 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        const itemsConfig = [
-            { name: "Tissues", img: "images (1).jpg" },
-            { name: "Creme Caramel", img: "images (2).jpg" },
-            { name: "Cling Film", img: "images (3).jpg" },
-            { name: "Onions", img: "images (4).jpg" },
-            { name: "Potatoes", img: "images (5).jpg" },
-            { name: "Molokhia", img: "images (6).jpg" },
-            { name: "Mayonnaise", img: "images (7).jpg" },
-            { name: "Raw Chicken", img: "images (8).jpg" },
-            { name: "Trash Bags", img: "images (9).jpg" },
-            { name: "Dishwashing Liquid", img: "shopping.avif" },
-            { name: "Milk", img: "1.png" },
-            { name: "Eggs", img: "2.png" },
-            { name: "Lusine", img: "3.png" },
-            { name: "Green Grapes", img: "4.png" },
-            { name: "Green Apple", img: "5.png" },
-            { name: "Bananas", img: "6.png" },
-            { name: "Bread", img: "7.png" },
-            { name: "Burger Patties", img: "8.png" },
-            { name: "Burger Buns", img: "9.png" },
-            { name: "Berry Juice", img: "10.png" },
-            { name: "Yogurt", img: "11.png" },
-            { name: "Soda", img: "12.png" },
-            { name: "Kinza Cola", img: "13.png" },
-            { name: "Ketchup", img: "14.png" },
-            { name: "Butter", img: "15.png" },
-            { name: "Chocolate Biscuits", img: "16.png" },
-            { name: "Macaroni and Cheese", img: "17.png" },
-            { name: "Cheese Chips", img: "18.png" },
-            { name: "Sliced Bread", img: "19.png" },
-            { name: "Flour", img: "20.png" },
-            { name: "Tea Bags", img: "21.png" },
-            { name: "Green Tea", img: "22.png" },
-            { name: "Biscuits", img: "23.png" },
-            { name: "Popcorn", img: "24.png" },
-            { name: "Cooking Cream", img: "25.png" },
-            { name: "Fruit Juice", img: "26.png" },
-            { name: "Cucumbers", img: "27.png" },
-            { name: "Chocolate Pudding", img: "28.png" },
-            { name: "Protein Milk", img: "29.png" },
-            { name: "Chocolate Milk", img: "30.png" },
-            { name: "Sugar", img: "31.png" }
+        const defaultCatalog = [
+            { id: 1, name: "Tissues", img: "images (1).jpg" },
+            { id: 2, name: "Creme Caramel", img: "images (2).jpg" },
+            { id: 3, name: "Cling Film", img: "images (3).jpg" },
+            { id: 4, name: "Onions", img: "images (4).jpg" },
+            { id: 5, name: "Potatoes", img: "images (5).jpg" },
+            { id: 6, name: "Molokhia", img: "images (6).jpg" },
+            { id: 7, name: "Mayonnaise", img: "images (7).jpg" },
+            { id: 8, name: "Raw Chicken", img: "images (8).jpg" },
+            { id: 9, name: "Trash Bags", img: "images (9).jpg" },
+            { id: 10, name: "Dishwashing Liquid", img: "shopping.avif" },
+            { id: 11, name: "Milk", img: "1.png" },
+            { id: 12, name: "Eggs", img: "2.png" },
+            { id: 13, name: "Lusine", img: "3.png" },
+            { id: 14, name: "Green Grapes", img: "4.png" },
+            { id: 15, name: "Green Apple", img: "5.png" },
+            { id: 16, name: "Bananas", img: "6.png" },
+            { id: 17, name: "Bread", img: "7.png" },
+            { id: 18, name: "Burger Patties", img: "8.png" },
+            { id: 19, name: "Burger Buns", img: "9.png" },
+            { id: 20, name: "Berry Juice", img: "10.png" },
+            { id: 21, name: "Yogurt", img: "11.png" },
+            { id: 22, name: "Soda", img: "12.png" },
+            { id: 23, name: "Kinza Cola", img: "13.png" },
+            { id: 24, name: "Ketchup", img: "14.png" },
+            { id: 25, name: "Butter", img: "15.png" },
+            { id: 26, name: "Chocolate Biscuits", img: "16.png" },
+            { id: 27, name: "Macaroni and Cheese", img: "17.png" },
+            { id: 28, name: "Cheese Chips", img: "18.png" },
+            { id: 29, name: "Sliced Bread", img: "19.png" },
+            { id: 30, name: "Flour", img: "20.png" },
+            { id: 31, name: "Tea Bags", img: "21.png" },
+            { id: 32, name: "Green Tea", img: "22.png" },
+            { id: 33, name: "Biscuits", img: "23.png" },
+            { id: 34, name: "Popcorn", img: "24.png" },
+            { id: 35, name: "Cooking Cream", img: "25.png" },
+            { id: 36, name: "Fruit Juice", img: "26.png" },
+            { id: 37, name: "Cucumbers", img: "27.png" },
+            { id: 38, name: "Chocolate Pudding", img: "28.png" },
+            { id: 39, name: "Protein Milk", img: "29.png" },
+            { id: 40, name: "Chocolate Milk", img: "30.png" },
+            { id: 41, name: "Sugar", img: "31.png" }
         ];
 
+        let catalogItems = [];
         let currentAccountName = null;
         let activeOrders = [];
         let historyOrders = [];
+        let isAdmin = false;
+        let currentEditingItemId = null;
+
+        // Sync Global Catalog from Firebase
+        function listenToCatalogChanges() {
+            db.collection("globalCatalog").doc("catalogDoc").onSnapshot(doc => {
+                if (doc.exists && doc.data().items) {
+                    catalogItems = doc.data().items;
+                } else {
+                    catalogItems = defaultCatalog;
+                    db.collection("globalCatalog").doc("catalogDoc").set({ items: defaultCatalog });
+                }
+                renderGridItems();
+            });
+        }
 
         async function saveAccountToFirebase() {
             if (!currentAccountName) return;
@@ -568,12 +640,45 @@
         }
 
         function updateGridCounts() {
-            itemsConfig.forEach((_, index) => {
-                const id = index + 1;
-                const countEl = document.getElementById(`count-${id}`);
-                const match = activeOrders.find(item => item.id === id && !item.isCustom);
+            catalogItems.forEach((item) => {
+                const countEl = document.getElementById(`count-${item.id}`);
+                const match = activeOrders.find(o => o.id === item.id && !o.isCustom);
                 if (countEl) countEl.innerText = match ? match.qty : '0';
             });
+        }
+
+        function renderGridItems() {
+            const grid = document.getElementById('items-grid');
+            grid.innerHTML = '';
+
+            catalogItems.forEach((item) => {
+                const card = document.createElement('div');
+                card.className = 'item-card';
+                card.innerHTML = `
+                    <img src="${item.img}" alt="${item.name}" onerror="this.src='https://via.placeholder.com/150/e6f2ff/0076ff?text=${item.id}'">
+                    <div class="item-name">${item.name}</div>
+                    <div class="controls">
+                        <button id="minus-${item.id}">-</button>
+                        <span class="count" id="count-${item.id}">0</span>
+                        <button id="plus-${item.id}">+</button>
+                    </div>
+                    <div class="admin-controls" id="admin-controls-${item.id}" style="display: ${isAdmin ? 'flex' : 'none'};">
+                        <button class="admin-edit-btn" id="edit-${item.id}">Edit</button>
+                        <button class="admin-delete-btn" id="delete-${item.id}">Delete</button>
+                    </div>
+                `;
+                grid.appendChild(card);
+
+                card.querySelector(`#minus-${item.id}`).addEventListener('click', () => updateQuantity(item.id, -1, item.name, item.img));
+                card.querySelector(`#plus-${item.id}`).addEventListener('click', () => updateQuantity(item.id, 1, item.name, item.img));
+
+                if (isAdmin) {
+                    card.querySelector(`#edit-${item.id}`).addEventListener('click', () => openAdminEditModal(item));
+                    card.querySelector(`#delete-${item.id}`).addEventListener('click', () => deleteCatalogItem(item.id));
+                }
+            });
+
+            updateGridCounts();
         }
 
         function renderActiveList() {
@@ -664,26 +769,100 @@
             }
         }
 
-        document.addEventListener("DOMContentLoaded", () => {
-            const grid = document.getElementById('items-grid');
-            itemsConfig.forEach((item, index) => {
-                const id = index + 1;
-                const card = document.createElement('div');
-                card.className = 'item-card';
-                card.innerHTML = `
-                    <img src="${item.img}" alt="${item.name}" onerror="this.src='https://via.placeholder.com/150/e6f2ff/0076ff?text=${id}'">
-                    <div class="item-name">${item.name}</div>
-                    <div class="controls">
-                        <button id="minus-${id}">-</button>
-                        <span class="count" id="count-${id}">0</span>
-                        <button id="plus-${id}">+</button>
-                    </div>
-                `;
-                grid.appendChild(card);
+        // --- ADMIN FUNCTIONS ---
+        function toggleAdminMode() {
+            if (!isAdmin) {
+                const pass = prompt("Enter Admin Password:");
+                if (pass === "4687") {
+                    isAdmin = true;
+                    document.getElementById('admin-badge-indicator').style.display = 'inline-block';
+                    document.getElementById('admin-action-btn').innerText = "+ Add Item";
+                    renderGridItems();
+                    alert("Admin mode activated!");
+                } else if (pass !== null) {
+                    alert("Incorrect Admin Password!");
+                }
+            } else {
+                openAdminAddModal();
+            }
+        }
 
-                card.querySelector(`#minus-${id}`).addEventListener('click', () => updateQuantity(id, -1, item.name, item.img));
-                card.querySelector(`#plus-${id}`).addEventListener('click', () => updateQuantity(id, 1, item.name, item.img));
-            });
+        function openAdminAddModal() {
+            currentEditingItemId = null;
+            document.getElementById('admin-modal-title').innerText = "Add Item to Catalog";
+            document.getElementById('admin-item-name').value = '';
+            document.getElementById('admin-item-file').value = '';
+            document.getElementById('admin-item-modal').style.display = 'flex';
+        }
+
+        function openAdminEditModal(item) {
+            currentEditingItemId = item.id;
+            document.getElementById('admin-modal-title').innerText = "Edit Item";
+            document.getElementById('admin-item-name').value = item.name;
+            document.getElementById('admin-item-file').value = '';
+            document.getElementById('admin-item-modal').style.display = 'flex';
+        }
+
+        async function saveAdminItem() {
+            const nameInput = document.getElementById('admin-item-name').value.trim();
+            const fileInput = document.getElementById('admin-item-file');
+
+            if (!nameInput) {
+                alert("Please enter an item name.");
+                return;
+            }
+
+            let imageSrc = "";
+
+            if (fileInput.files && fileInput.files[0]) {
+                const file = fileInput.files[0];
+                imageSrc = await new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => resolve(e.target.result);
+                    reader.readAsDataURL(file);
+                });
+            }
+
+            if (currentEditingItemId) {
+                // Edit existing item
+                catalogItems = catalogItems.map(item => {
+                    if (item.id === currentEditingItemId) {
+                        return {
+                            ...item,
+                            name: nameInput,
+                            img: imageSrc !== "" ? imageSrc : item.img
+                        };
+                    }
+                    return item;
+                });
+            } else {
+                // Add new item
+                if (imageSrc === "") {
+                    alert("Please select an image file.");
+                    return;
+                }
+                const newId = catalogItems.length > 0 ? Math.max(...catalogItems.map(i => typeof i.id === 'number' ? i.id : 0)) + 1 : 1;
+                catalogItems.push({
+                    id: newId,
+                    name: nameInput,
+                    img: imageSrc
+                });
+            }
+
+            await db.collection("globalCatalog").doc("catalogDoc").set({ items: catalogItems });
+            document.getElementById('admin-item-modal').style.display = 'none';
+            renderGridItems();
+        }
+
+        async function deleteCatalogItem(itemId) {
+            if (!confirm("Are you sure you want to delete this item from the catalog?")) return;
+            catalogItems = catalogItems.filter(item => item.id !== itemId);
+            await db.collection("globalCatalog").doc("catalogDoc").set({ items: catalogItems });
+            renderGridItems();
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            listenToCatalogChanges();
 
             // Navigation Toggle
             document.getElementById('go-to-create').addEventListener('click', () => {
@@ -823,10 +1002,20 @@
                 }
             });
 
+            // Admin Actions
+            document.getElementById('admin-action-btn').addEventListener('click', toggleAdminMode);
+            document.getElementById('save-admin-item-btn').addEventListener('click', saveAdminItem);
+            document.getElementById('close-admin-item-btn').addEventListener('click', () => {
+                document.getElementById('admin-item-modal').style.display = 'none';
+            });
+
             // Logout handle
             document.getElementById('logout-btn').addEventListener('click', async () => {
                 await saveAccountToFirebase();
                 currentAccountName = null;
+                isAdmin = false;
+                document.getElementById('admin-badge-indicator').style.display = 'none';
+                document.getElementById('admin-action-btn').innerText = "Admin";
                 document.getElementById('app-screen').style.display = 'none';
                 document.getElementById('auth-screen').style.display = 'flex';
             });
