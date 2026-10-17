@@ -18,6 +18,26 @@
             --danger: #e53e3e;
             --danger-hover: #c53030;
             --admin-color: #8e44ad;
+            --control-bg: #f7fafc;
+            --modal-overlay: rgba(26, 32, 44, 0.4);
+        }
+
+        /* Dark Mode Theme Variables */
+        [data-theme="dark"] {
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --primary-light: #1e293b;
+            --success: #10b981;
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --danger: #ef4444;
+            --danger-hover: #dc2626;
+            --admin-color: #a855f7;
+            --control-bg: #0f172a;
+            --modal-overlay: rgba(0, 0, 0, 0.7);
         }
 
         * { box-sizing: border-box; }
@@ -29,6 +49,7 @@
             background-color: var(--bg);
             color: var(--text);
             padding-bottom: 80px;
+            transition: background-color 0.2s ease, color 0.2s ease;
         }
 
         /* Auth Screen */
@@ -45,10 +66,11 @@
             background: var(--card-bg);
             padding: 32px 24px;
             border-radius: 16px;
-            box-shadow: 0 10px 25px rgba(0, 118, 255, 0.08);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
             text-align: center;
             width: 100%;
             max-width: 380px;
+            border: 1px solid var(--border);
         }
 
         .auth-card h2 { margin-top: 0; margin-bottom: 20px; font-size: 22px; }
@@ -73,7 +95,7 @@
             border-radius: 10px;
             width: 100%;
             outline: none;
-            background: white;
+            background: var(--card-bg);
             color: var(--text);
         }
 
@@ -147,7 +169,7 @@
 
         .header-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 
-        .custom-btn, .history-btn, .settings-btn, .logout-btn, .admin-btn {
+        .custom-btn, .history-btn, .settings-btn, .logout-btn, .admin-btn, .theme-btn {
             border: none;
             padding: 8px 12px;
             font-size: 13px;
@@ -156,11 +178,12 @@
             cursor: pointer;
         }
 
+        .theme-btn { background-color: var(--control-bg); color: var(--text); border: 1px solid var(--border); }
         .custom-btn { background-color: #718096; color: white; }
         .history-btn { background-color: var(--primary-light); color: var(--primary); }
-        .settings-btn { background-color: #edf2f7; color: var(--text); }
-        .admin-btn { background-color: #f3e5f5; color: var(--admin-color); }
-        .logout-btn { background-color: #edf2f7; color: var(--danger); }
+        .settings-btn { background-color: var(--control-bg); color: var(--text); border: 1px solid var(--border); }
+        .admin-btn { background-color: var(--primary-light); color: var(--admin-color); }
+        .logout-btn { background-color: var(--control-bg); color: var(--danger); border: 1px solid var(--border); }
 
         .container { max-width: 600px; margin: 20px auto; padding: 0 16px; }
 
@@ -188,7 +211,7 @@
             object-fit: cover;
             border-radius: 10px;
             margin-bottom: 12px;
-            background-color: #f7fafc;
+            background-color: var(--control-bg);
         }
 
         .item-name { font-weight: 600; font-size: 15px; margin-bottom: 12px; }
@@ -197,7 +220,7 @@
             display: flex;
             align-items: center;
             gap: 16px;
-            background: #f7fafc;
+            background: var(--control-bg);
             padding: 4px 8px;
             border-radius: 20px;
             border: 1px solid var(--border);
@@ -208,7 +231,8 @@
             height: 28px;
             border-radius: 50%;
             border: none;
-            background: white;
+            background: var(--card-bg);
+            color: var(--text);
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
@@ -233,7 +257,7 @@
             font-weight: 600;
         }
 
-        .admin-edit-btn { background-color: #e2e8f0; color: #2d3748; }
+        .admin-edit-btn { background-color: var(--border); color: var(--text); }
         .admin-delete-btn { background-color: #fed7d7; color: var(--danger); }
 
         .list-item {
@@ -257,14 +281,14 @@
         }
 
         .custom-placeholder {
-            background-color: #edf2f7;
-            color: #718096;
+            background-color: var(--control-bg);
+            color: var(--text-muted);
             font-size: 11px;
             font-weight: 700;
             display: flex;
             align-items: center;
             justify-content: center;
-            border: 1px dashed #cbd5e0;
+            border: 1px dashed var(--border);
         }
 
         .qty-badge {
@@ -285,7 +309,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background: white;
+            background: var(--card-bg);
         }
 
         .circle-checkbox.checked {
@@ -321,7 +345,7 @@
             display: none;
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(26, 32, 44, 0.4);
+            background: var(--modal-overlay);
             z-index: 20;
             justify-content: center;
             align-items: center;
@@ -329,13 +353,14 @@
         }
 
         .modal-content {
-            background: white;
+            background: var(--card-bg);
             padding: 24px;
             border-radius: 16px;
             width: 100%;
             max-width: 450px;
             max-height: 75vh;
             overflow-y: auto;
+            border: 1px solid var(--border);
         }
 
         .modal-header {
@@ -347,7 +372,7 @@
             padding-bottom: 12px;
         }
 
-        .close-modal { background: none; border: none; font-size: 24px; cursor: pointer; }
+        .close-modal { background: none; border: none; font-size: 24px; color: var(--text); cursor: pointer; }
         .empty-msg { text-align: center; color: var(--text-muted); margin-top: 40px; }
         
         .danger-btn {
@@ -411,6 +436,7 @@
                 </div>
             </div>
             <div class="header-actions">
+                <button class="theme-btn" id="theme-toggle-btn">🌙 Dark</button>
                 <button class="custom-btn" id="header-custom-btn">Custom</button>
                 <button class="admin-btn" id="admin-action-btn">Admin</button>
                 <button class="history-btn" id="open-history-btn">History</button>
@@ -558,6 +584,28 @@
         let historyOrders = [];
         let isAdmin = false;
         let currentEditingItemId = null;
+
+        // Theme Toggle Manager
+        function initTheme() {
+            const savedTheme = localStorage.getItem('appTheme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            updateThemeButtonText(savedTheme);
+        }
+
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('appTheme', newTheme);
+            updateThemeButtonText(newTheme);
+        }
+
+        function updateThemeButtonText(theme) {
+            const btn = document.getElementById('theme-toggle-btn');
+            if (btn) {
+                btn.innerText = theme === 'dark' ? '☀️ Light' : '🌙 Dark';
+            }
+        }
 
         // Sync Global Catalog from Firebase
         function listenToCatalogChanges() {
@@ -759,7 +807,7 @@
                         ${mediaElement}
                         <div>
                             <strong>${item.name}</strong>
-                            <span class="qty-badge" style="background-color: #e6fcf5; color: var(--success);">x${item.qty}</span>
+                            <span class="qty-badge" style="background-color: var(--primary-light); color: var(--success);">x${item.qty}</span>
                             <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Checked at: ${timeString}</div>
                         </div>
                     </div>
@@ -862,7 +910,11 @@
         }
 
         document.addEventListener("DOMContentLoaded", () => {
+            initTheme();
             listenToCatalogChanges();
+
+            // Theme Toggle Action
+            document.getElementById('theme-toggle-btn').addEventListener('click', toggleTheme);
 
             // Navigation Toggle
             document.getElementById('go-to-create').addEventListener('click', () => {
