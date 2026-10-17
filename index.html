@@ -88,7 +88,7 @@
             margin-bottom: 6px;
         }
 
-        .auth-input {
+        .auth-input, .auth-select {
             padding: 12px;
             font-size: 15px;
             border: 2px solid var(--border);
@@ -99,7 +99,7 @@
             color: var(--text);
         }
 
-        .auth-input:focus {
+        .auth-input:focus, .auth-select:focus {
             border-color: var(--primary);
         }
 
@@ -169,7 +169,7 @@
 
         .header-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 
-        .custom-btn, .history-btn, .settings-btn, .logout-btn, .admin-btn, .theme-btn {
+        .custom-btn, .history-btn, .settings-btn, .logout-btn, .admin-btn, .theme-btn, .regular-btn {
             border: none;
             padding: 8px 12px;
             font-size: 13px;
@@ -180,6 +180,7 @@
 
         .theme-btn { background-color: var(--control-bg); color: var(--text); border: 1px solid var(--border); }
         .custom-btn { background-color: #718096; color: white; }
+        .regular-btn { background-color: #319795; color: white; }
         .history-btn { background-color: var(--primary-light); color: var(--primary); }
         .settings-btn { background-color: var(--control-bg); color: var(--text); border: 1px solid var(--border); }
         .admin-btn { background-color: var(--primary-light); color: var(--admin-color); }
@@ -388,6 +389,14 @@
             margin-top: 12px;
         }
         .danger-btn:hover { background-color: var(--danger-hover); }
+
+        .regular-add-box {
+            background: var(--control-bg);
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 16px;
+            border: 1px solid var(--border);
+        }
     </style>
 </head>
 <body>
@@ -437,6 +446,7 @@
             </div>
             <div class="header-actions">
                 <button class="theme-btn" id="theme-toggle-btn">🌙 Dark</button>
+                <button class="regular-btn" id="open-regular-btn">Regular Items</button>
                 <button class="custom-btn" id="header-custom-btn">Custom</button>
                 <button class="admin-btn" id="admin-action-btn">Admin</button>
                 <button class="history-btn" id="open-history-btn">History</button>
@@ -459,6 +469,27 @@
             <button class="nav-btn active" id="nav-order">1. Order</button>
             <button class="nav-btn" id="nav-list">2. List</button>
         </nav>
+    </div>
+
+    <!-- Regular Items Modal -->
+    <div id="regular-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Regular Items</h3>
+                <button class="close-modal" id="close-regular-btn">&times;</button>
+            </div>
+
+            <!-- Admin Section to Add Item to Regular List -->
+            <div id="admin-regular-controls" class="regular-add-box" style="display: none;">
+                <div class="form-group">
+                    <label for="regular-item-select">Add Item from Catalog</label>
+                    <select id="regular-item-select" class="auth-select"></select>
+                </div>
+                <button class="auth-btn" id="add-to-regular-btn" style="margin-top: 0;">Add to Regular List</button>
+            </div>
+
+            <div id="regular-items-list"></div>
+        </div>
     </div>
 
     <!-- History Modal -->
@@ -579,6 +610,7 @@
         ];
 
         let catalogItems = [];
+        let regularItems = [];
         let currentAccountName = null;
         let activeOrders = [];
         let historyOrders = [];
@@ -617,6 +649,20 @@
                     db.collection("globalCatalog").doc("catalogDoc").set({ items: defaultCatalog });
                 }
                 renderGridItems();
+                updateRegularDropdown();
+            });
+        }
+
+        // Sync Regular Items from Firebase
+        function listenToRegularItems() {
+            db.collection("globalCatalog").doc("regularItemsDoc").onSnapshot(doc => {
+                if (doc.exists && doc.data().items) {
+                    regularItems = doc.data().items;
+                } else {
+                    regularItems = [];
+                    db.collection("globalCatalog").doc("regularItemsDoc").set({ items: [] });
+                }
+                renderRegularItems();
             });
         }
 
@@ -776,6 +822,81 @@
             });
         }
 
+        // --- REGULAR ITEMS LIST LOGIC ---
+        function updateRegularDropdown() {
+            const select = document.getElementById('regular-item-select');
+            if (!select) return;
+            select.innerHTML = '';
+            catalogItems.forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item.id;
+                opt.innerText = item.name;
+                select.appendChild(opt);
+            });
+        }
+
+        function renderRegularItems() {
+            const container = document.getElementById('regular-items-list');
+            if (!container) return;
+            container.innerHTML = '';
+
+            if (regularItems.length === 0) {
+                container.innerHTML = '<div class="empty-msg">No regular items added yet.</div>';
+                return;
+            }
+
+            regularItems.forEach((item) => {
+                const row = document.createElement('div');
+                row.className = 'list-item';
+
+                const deleteBtn = isAdmin ? `<button class="admin-delete-btn" style="max-width: 70px;" id="del-reg-${item.id}">Delete</button>` : '';
+
+                row.innerHTML = `
+                    <div class="list-item-left">
+                        <img src="${item.img}" onerror="this.src='https://via.placeholder.com/150/e6f2ff/0076ff?text=${item.id}'">
+                        <div>
+                            <strong>${item.name}</strong>
+                        </div>
+                    </div>
+                    ${deleteBtn}
+                `;
+                container.appendChild(row);
+
+                if (isAdmin) {
+                    const delBtn = row.querySelector(`#del-reg-${item.id}`);
+                    if (delBtn) {
+                        delBtn.addEventListener('click', () => removeRegularItem(item.id));
+                    }
+                }
+            });
+        }
+
+        async function addSelectedToRegular() {
+            const select = document.getElementById('regular-item-select');
+            const selectedId = parseInt(select.value, 10);
+            const foundItem = catalogItems.find(i => i.id === selectedId);
+
+            if (!foundItem) return;
+
+            if (regularItems.some(i => i.id === foundItem.id)) {
+                alert("This item is already in the Regular Items list.");
+                return;
+            }
+
+            regularItems.push({
+                id: foundItem.id,
+                name: foundItem.name,
+                img: foundItem.img
+            });
+
+            await db.collection("globalCatalog").doc("regularItemsDoc").set({ items: regularItems });
+        }
+
+        async function removeRegularItem(itemId) {
+            regularItems = regularItems.filter(i => i.id !== itemId);
+            await db.collection("globalCatalog").doc("regularItemsDoc").set({ items: regularItems });
+        }
+
         function openHistory() {
             const now = new Date().getTime();
             const modal = document.getElementById('history-modal');
@@ -825,7 +946,9 @@
                     isAdmin = true;
                     document.getElementById('admin-badge-indicator').style.display = 'inline-block';
                     document.getElementById('admin-action-btn').innerText = "+ Add Item";
+                    document.getElementById('admin-regular-controls').style.display = 'block';
                     renderGridItems();
+                    renderRegularItems();
                     alert("Admin mode activated!");
                 } else if (pass !== null) {
                     alert("Incorrect Admin Password!");
@@ -912,9 +1035,19 @@
         document.addEventListener("DOMContentLoaded", () => {
             initTheme();
             listenToCatalogChanges();
+            listenToRegularItems();
 
             // Theme Toggle Action
             document.getElementById('theme-toggle-btn').addEventListener('click', toggleTheme);
+
+            // Regular Items Actions
+            document.getElementById('open-regular-btn').addEventListener('click', () => {
+                document.getElementById('regular-modal').style.display = 'flex';
+            });
+            document.getElementById('close-regular-btn').addEventListener('click', () => {
+                document.getElementById('regular-modal').style.display = 'none';
+            });
+            document.getElementById('add-to-regular-btn').addEventListener('click', addSelectedToRegular);
 
             // Navigation Toggle
             document.getElementById('go-to-create').addEventListener('click', () => {
@@ -1068,8 +1201,10 @@
                 isAdmin = false;
                 document.getElementById('admin-badge-indicator').style.display = 'none';
                 document.getElementById('admin-action-btn').innerText = "Admin";
+                document.getElementById('admin-regular-controls').style.display = 'none';
                 document.getElementById('app-screen').style.display = 'none';
                 document.getElementById('auth-screen').style.display = 'flex';
+                renderRegularItems();
             });
 
             // Modals Controls
